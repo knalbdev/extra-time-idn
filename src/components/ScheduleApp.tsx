@@ -3,11 +3,33 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { ESKUL_ORDER } from "@/lib/constants";
 import { isoToday, monthKey, monthLabel } from "@/lib/format";
+import { getAllEvents } from "@/lib/sheets";
 import { EskulEvent, EskulKey, ScheduleResponse } from "@/lib/types";
 import { Header } from "./Header";
 import { WeekHighlight } from "./WeekHighlight";
 import { Filters, MonthOption } from "./Filters";
 import { ScheduleList } from "./ScheduleList";
+
+const CACHE_KEY = "extratime:schedule-cache:v1";
+
+function readCache(): ScheduleResponse | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.localStorage.getItem(CACHE_KEY);
+    return raw ? (JSON.parse(raw) as ScheduleResponse) : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeCache(data: ScheduleResponse) {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(CACHE_KEY, JSON.stringify(data));
+  } catch {
+    // localStorage may be unavailable (e.g. private mode); ignore.
+  }
+}
 
 export function ScheduleApp() {
   const [events, setEvents] = useState<EskulEvent[]>([]);
@@ -25,14 +47,14 @@ export function ScheduleApp() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch("/api/schedule", { cache: "no-store" });
-      if (!res.ok) {
-        const body = await res.json().catch(() => null);
-        throw new Error(body?.error || `Gagal memuat data (status ${res.status})`);
-      }
-      const data: ScheduleResponse = await res.json();
+      const freshEvents = await getAllEvents();
+      const data: ScheduleResponse = {
+        events: freshEvents,
+        fetchedAt: new Date().toISOString(),
+      };
       setEvents(data.events);
       setFetchedAt(data.fetchedAt);
+      writeCache(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Gagal memuat data jadwal.");
     } finally {
@@ -41,8 +63,14 @@ export function ScheduleApp() {
   }, []);
 
   useEffect(() => {
-    // Initial data fetch on mount; `load` also powers the manual refresh button.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
+    // Paint instantly from the last cached fetch (if any) while a fresh
+    // fetch runs in the background; `load` also powers the manual refresh button.
+    const cached = readCache();
+    if (cached) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setEvents(cached.events);
+      setFetchedAt(cached.fetchedAt);
+    }
     load();
   }, [load]);
 

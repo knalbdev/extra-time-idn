@@ -1,0 +1,16 @@
+{
+  "name": "extratime-app",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Capacitor Android shell for Extra Time",
+  "scripts": {
+    "sync": "cap sync android"
+  },
+  "dependencies": {
+    "@capacitor/android": "^8.5.0",
+    "@capacitor/core": "^8.5.0"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^8.5.0"
+  }
+}
