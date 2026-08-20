@@ -2,6 +2,8 @@ export type EskulKey = "renang" | "panahan" | "berkuda" | "taekwondo" | "pramuka
 
 export type StatusKey = "selesai" | "belum" | "ditiadakan" | "libur" | "terjadwal";
 
+export type StatusBucket = "completed" | "upcoming" | "canceled";
+
 export interface EskulEvent {
   id: string;
   eskul: EskulKey;

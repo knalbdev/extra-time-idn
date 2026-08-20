@@ -1,5 +1,5 @@
 import Papa from "papaparse";
-import { CLASS_LIST, ESKUL_META, SPREADSHEET_ID } from "./constants";
+import { CLASS_LIST, ESKUL_META, SMK_CLASSES, SMP_CLASSES, SPREADSHEET_ID } from "./constants";
 import { EskulEvent, StatusKey } from "./types";
 
 const MONTH_MAP: Record<string, number> = {
@@ -33,6 +33,19 @@ function parseIndoDate(raw: string | undefined): { iso: string; label: string } 
 
 function extractClasses(text: string | undefined): string[] {
   if (!text) return [];
+  const lower = text.toLowerCase();
+  const hasSmp = /\bsmp\b/.test(lower);
+  const hasSmk = /\bsmk\b/.test(lower);
+
+  // "Semua jenjang" / "seluruh kelas" style entries apply to every class —
+  // expand them so month/class filtering still matches, rather than losing
+  // the info as an empty (and misleadingly "undetermined") class list.
+  if (/(semua|seluruh)\s+(jenjang|kelas|siswa)/.test(lower) || (hasSmp && hasSmk)) {
+    return [...CLASS_LIST];
+  }
+  if (hasSmp) return [...SMP_CLASSES];
+  if (hasSmk) return [...SMK_CLASSES];
+
   const found: string[] = [];
   const padded = ` ${text} `;
   for (const c of CLASS_LIST) {
@@ -135,7 +148,8 @@ function parseBerkuda(rows: string[][]): EskulEvent[] {
   for (const row of rows.slice(1)) {
     const d = parseIndoDate(row[2]);
     if (!d) continue;
-    const classes = extractClasses(row[4]);
+    const rawClasses = clean(row[4]);
+    const classes = extractClasses(rawClasses);
     events.push({
       id: `berkuda-${d.iso}-${row[3]}`,
       eskul: "berkuda",
@@ -145,7 +159,7 @@ function parseBerkuda(rows: string[][]): EskulEvent[] {
       dateLabel: d.label,
       time: "14.00 (berangkat dari IDN)",
       extra: clean(row[3]),
-      classes,
+      classes: classes.length ? classes : rawClasses ? [rawClasses] : [],
       status: clean(row[5]) ?? "",
       statusNormalized: normalizeStatus(row[5]),
       semester: clean(row[1]),
@@ -161,7 +175,8 @@ function parseTaekwondo(rows: string[][]): EskulEvent[] {
   for (const row of rows.slice(1)) {
     const d = parseIndoDate(row[2]);
     if (!d) continue;
-    const classes = extractClasses(row[4]);
+    const rawClasses = clean(row[4]);
+    const classes = extractClasses(rawClasses);
     events.push({
       id: `taekwondo-${d.iso}-${row[3]}`,
       eskul: "taekwondo",
@@ -171,7 +186,7 @@ function parseTaekwondo(rows: string[][]): EskulEvent[] {
       dateLabel: d.label,
       time: "09.00 - 11.00",
       extra: clean(row[3]) ? `Jenjang ${row[3].trim()}` : undefined,
-      classes,
+      classes: classes.length ? classes : rawClasses ? [rawClasses] : [],
       status: clean(row[5]) ?? "",
       statusNormalized: normalizeStatus(row[5]),
       semester: clean(row[1]),
@@ -187,7 +202,8 @@ function parsePramuka(rows: string[][]): EskulEvent[] {
   for (const row of rows.slice(1)) {
     const d = parseIndoDate(row[1]);
     if (!d) continue;
-    const classes = extractClasses(row[2]);
+    const rawClasses = clean(row[2]);
+    const classes = extractClasses(rawClasses);
     events.push({
       id: `pramuka-${d.iso}`,
       eskul: "pramuka",
@@ -196,7 +212,7 @@ function parsePramuka(rows: string[][]): EskulEvent[] {
       date: d.iso,
       dateLabel: d.label,
       time: "08.00 - 11.00",
-      classes,
+      classes: classes.length ? classes : rawClasses ? [rawClasses] : [],
       status: clean(row[3]) ?? "",
       statusNormalized: normalizeStatus(row[3]),
       result: clean(row[4]),

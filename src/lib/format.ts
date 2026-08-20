@@ -1,4 +1,4 @@
-import { DAY_LABELS_ID, MONTH_LABELS_ID } from "./constants";
+import { CLASS_LIST, DAY_LABELS_ID, MONTH_LABELS_ID, SMK_CLASSES, SMP_CLASSES } from "./constants";
 
 // All dates in the app are plain ISO "yyyy-mm-dd" strings interpreted as
 // wall-clock calendar dates (no timezone math) since the schedule only ever
@@ -63,6 +63,25 @@ export function addDaysIso(iso: string, days: number): string {
   const d = parseIso(iso);
   d.setDate(d.getDate() + days);
   return dateToIso(d);
+}
+
+/**
+ * Collapses a fully-covered class list into a single readable label
+ * (e.g. all 10 classes -> "Semua Jenjang") instead of ten separate chips.
+ */
+export function summarizeClasses(classes: string[]): string[] {
+  if (classes.length === 0) return [];
+  const set = new Set(classes);
+  if (CLASS_LIST.length === set.size && CLASS_LIST.every((c) => set.has(c))) {
+    return ["Semua Jenjang"];
+  }
+  if (SMP_CLASSES.length === set.size && SMP_CLASSES.every((c) => set.has(c))) {
+    return ["SMP"];
+  }
+  if (SMK_CLASSES.length === set.size && SMK_CLASSES.every((c) => set.has(c))) {
+    return ["SMK"];
+  }
+  return classes;
 }
 
 export function formatUpdatedAt(iso: string): string {

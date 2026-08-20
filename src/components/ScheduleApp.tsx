@@ -5,10 +5,11 @@ import { ESKUL_ORDER } from "@/lib/constants";
 import { isoToday, monthKey, monthLabel } from "@/lib/format";
 import { getAllEvents } from "@/lib/sheets";
 import { EskulEvent, EskulKey, ScheduleResponse } from "@/lib/types";
-import { Header } from "./Header";
-import { WeekHighlight } from "./WeekHighlight";
-import { Filters, MonthOption } from "./Filters";
-import { ScheduleList } from "./ScheduleList";
+import { DashboardView } from "./DashboardView";
+import { MonthOption } from "./ScheduleFilters";
+import { ScheduleView } from "./ScheduleView";
+import { Sidebar, View } from "./Sidebar";
+import { Topbar } from "./Topbar";
 
 const CACHE_KEY = "extratime:schedule-cache:v1";
 
@@ -36,6 +37,9 @@ export function ScheduleApp() {
   const [fetchedAt, setFetchedAt] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const [view, setView] = useState<View>("dashboard");
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const [selectedMonth, setSelectedMonth] = useState(() => monthKey(isoToday()));
   const [selectedClass, setSelectedClass] = useState("all");
@@ -122,73 +126,77 @@ export function ScheduleApp() {
     });
   }, []);
 
+  const clearFilters = useCallback(() => {
+    setSelectedMonth("all");
+    setSelectedClass("all");
+    setActiveEskuls(new Set(ESKUL_ORDER));
+  }, []);
+
   return (
-    <div className="relative min-h-full overflow-x-clip">
-      <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[640px] overflow-hidden">
-        <div className="absolute -top-24 left-[-10%] h-72 w-72 rounded-full bg-indigo-200/40 blur-3xl sm:h-96 sm:w-96" />
-        <div className="absolute top-24 right-[-10%] h-72 w-72 rounded-full bg-sky-200/30 blur-3xl sm:h-96 sm:w-96" />
-        <div className="absolute top-96 left-1/3 h-64 w-64 rounded-full bg-violet-200/25 blur-3xl" />
+    <div className="flex min-h-screen bg-surface">
+      <Sidebar
+        active={view}
+        onNavigate={setView}
+        open={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+      />
+
+      <div className="min-w-0 flex-1">
+        <Topbar
+          fetchedAt={fetchedAt}
+          loading={loading}
+          onRefresh={load}
+          onMenuClick={() => setSidebarOpen(true)}
+        />
+
+        <main className="mx-auto w-full max-w-[1400px] flex-1 flex-col gap-6 px-4 py-6 md:px-8 md:py-8">
+          {error && (
+            <div className="mb-6 flex items-center justify-between gap-3 rounded-lg border border-error-container bg-error-container/40 px-4 py-3 text-sm text-error">
+              <span>{error}</span>
+              <button
+                type="button"
+                onClick={load}
+                className="shrink-0 rounded-md bg-error px-3 py-1.5 text-xs font-semibold text-white hover:opacity-90"
+              >
+                Coba Lagi
+              </button>
+            </div>
+          )}
+
+          {loading && events.length === 0 && !error ? (
+            <div className="space-y-6">
+              <div className="h-40 animate-shimmer rounded-xl" />
+              <div className="h-24 animate-shimmer rounded-xl" />
+              <div className="h-96 animate-shimmer rounded-xl" />
+            </div>
+          ) : (
+            <div className="animate-fade-in-up">
+              {view === "dashboard" ? (
+                <DashboardView events={events} />
+              ) : (
+                <ScheduleView
+                  events={events}
+                  filteredEvents={filteredEvents}
+                  months={months}
+                  selectedMonth={selectedMonth}
+                  onMonthChange={setSelectedMonth}
+                  selectedClass={selectedClass}
+                  onClassChange={setSelectedClass}
+                  activeEskuls={activeEskuls}
+                  onToggleEskul={toggleEskul}
+                  onClearFilters={clearFilters}
+                />
+              )}
+            </div>
+          )}
+        </main>
+
+        <footer className="border-t border-outline-variant/50 bg-white/60">
+          <div className="mx-auto flex max-w-[1400px] flex-col items-center gap-2 px-4 py-8 text-center md:px-8">
+            <p className="text-xs text-on-surface-variant/70">&copy; IDN Akhwat 2026</p>
+          </div>
+        </footer>
       </div>
-
-      <Header fetchedAt={fetchedAt} loading={loading} onRefresh={load} />
-
-      <main className="mx-auto max-w-6xl space-y-6 px-4 py-6 sm:px-6">
-        {error && (
-          <div className="flex items-center justify-between gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-            <span>{error}</span>
-            <button
-              type="button"
-              onClick={load}
-              className="shrink-0 rounded-md bg-red-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-500"
-            >
-              Coba Lagi
-            </button>
-          </div>
-        )}
-
-        {loading && events.length === 0 && !error ? (
-          <div className="space-y-6">
-            <div className="h-40 animate-pulse rounded-2xl bg-gray-100" />
-            <div className="h-24 animate-pulse rounded-2xl bg-gray-100" />
-            <div className="h-96 animate-pulse rounded-2xl bg-gray-100" />
-          </div>
-        ) : (
-          <>
-            <WeekHighlight events={events} />
-
-            <Filters
-              months={months}
-              selectedMonth={selectedMonth}
-              onMonthChange={setSelectedMonth}
-              selectedClass={selectedClass}
-              onClassChange={setSelectedClass}
-              activeEskuls={activeEskuls}
-              onToggleEskul={toggleEskul}
-              resultCount={filteredEvents.length}
-              totalCount={events.length}
-            />
-
-            <ScheduleList events={filteredEvents} />
-          </>
-        )}
-      </main>
-
-      <footer className="mx-auto flex max-w-6xl flex-col items-center gap-3 px-4 py-10 text-center sm:px-6">
-        <p className="text-xs text-gray-400">
-          Dibangun dari data Google Spreadsheet Jadwal Ekstrakurikuler SMP SMK IDN Akhwat.
-        </p>
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-indigo-50 to-violet-50 px-3.5 py-1.5 text-xs font-semibold text-indigo-600 ring-1 ring-indigo-100">
-          <svg
-            className="h-3.5 w-3.5"
-            viewBox="0 0 24 24"
-            fill="currentColor"
-            stroke="none"
-          >
-            <path d="M12 21s-6.7-4.3-9.3-8.2C1 10 1.5 6.4 4.6 4.9c2.4-1.2 4.8-.3 6.2 1.6l1.2 1.6 1.2-1.6c1.4-1.9 3.8-2.8 6.2-1.6 3.1 1.5 3.6 5.1 1.9 7.9C18.7 16.7 12 21 12 21z" />
-          </svg>
-          developed by tia
-        </span>
-      </footer>
     </div>
   );
 }

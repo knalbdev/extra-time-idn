@@ -1,0 +1,216 @@
+"use client";
+
+import { useMemo, useState } from "react";
+import { ESKUL_META } from "@/lib/constants";
+import { dayBadge, isoToday, monthKey, monthLabel, summarizeClasses } from "@/lib/format";
+import { EskulEvent } from "@/lib/types";
+import { ClassChip, StatusChip } from "./Badges";
+import { EskulIcon } from "./EskulIcon";
+import { Icon } from "./Icon";
+
+function defaultExpandedMonth(keys: string[]): Set<string> {
+  if (keys.length === 0) return new Set();
+  const current = monthKey(isoToday());
+  const defaultKey = keys.includes(current) ? current : (keys.find((k) => k >= current) ?? keys[0]);
+  return new Set([defaultKey]);
+}
+
+export function ScheduleTable({
+  events,
+  onClearFilters,
+}: {
+  events: EskulEvent[];
+  onClearFilters: () => void;
+}) {
+  const groups = useMemo(() => {
+    const byMonth = new Map<string, EskulEvent[]>();
+    for (const event of events) {
+      const mKey = monthKey(event.date);
+      if (!byMonth.has(mKey)) byMonth.set(mKey, []);
+      byMonth.get(mKey)!.push(event);
+    }
+    return Array.from(byMonth.entries())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([mKey, monthEvents]) => ({
+        key: mKey,
+        label: monthLabel(mKey),
+        events: [...monthEvents].sort(
+          (a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time),
+        ),
+      }));
+  }, [events]);
+
+  const groupKeysSignature = groups.map((g) => g.key).join("|");
+  const [expanded, setExpanded] = useState<Set<string>>(() =>
+    defaultExpandedMonth(groups.map((g) => g.key)),
+  );
+  const [trackedSignature, setTrackedSignature] = useState(groupKeysSignature);
+
+  // Re-derive which month is open by default whenever the set of visible
+  // months changes (e.g. a filter was applied) — adjusted during render, per
+  // https://react.dev/learn/you-might-not-need-an-effect#adjusting-some-state-when-a-prop-changes
+  if (groupKeysSignature !== trackedSignature) {
+    setTrackedSignature(groupKeysSignature);
+    setExpanded(defaultExpandedMonth(groups.map((g) => g.key)));
+  }
+
+  if (events.length === 0) {
+    return (
+      <section className="glass-card flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-outline-variant/60 p-12 text-center">
+        <Icon name="event_busy" className="mb-4 text-5xl text-outline" />
+        <h3 className="text-lg font-heading font-semibold text-on-surface">
+          Tidak ada jadwal ditemukan
+        </h3>
+        <p className="mt-2 max-w-md text-sm text-on-surface-variant">
+          Coba ubah filter bulan, kelas, atau ekstrakurikuler untuk melihat jadwal yang tersedia.
+        </p>
+        <button
+          type="button"
+          onClick={onClearFilters}
+          className="mt-6 rounded-lg border border-outline px-4 py-2 text-sm font-semibold text-primary transition hover:bg-surface-container"
+        >
+          Clear Filters
+        </button>
+      </section>
+    );
+  }
+
+  const allOpen = groups.length > 0 && groups.every((g) => expanded.has(g.key));
+
+  return (
+    <section className="glass-card overflow-hidden rounded-xl">
+      <div className="flex items-center justify-between border-b border-outline-variant/40 px-5 py-3.5">
+        <h2 className="text-lg font-heading font-semibold text-primary">Jadwal Terperinci</h2>
+        <button
+          type="button"
+          onClick={() =>
+            setExpanded(allOpen ? new Set() : new Set(groups.map((g) => g.key)))
+          }
+          className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold text-secondary transition hover:bg-secondary/10"
+        >
+          {allOpen ? "Tutup semua bulan" : "Buka semua bulan"}
+        </button>
+      </div>
+
+      <div className="divide-y divide-outline-variant/30">
+        {groups.map((group) => {
+          const isOpen = expanded.has(group.key);
+          return (
+            <div key={group.key}>
+              <button
+                type="button"
+                onClick={() =>
+                  setExpanded((prev) => {
+                    const next = new Set(prev);
+                    if (next.has(group.key)) next.delete(group.key);
+                    else next.add(group.key);
+                    return next;
+                  })
+                }
+                aria-expanded={isOpen}
+                className={`flex w-full items-center justify-between px-5 py-3 text-left transition hover:bg-secondary/5 ${
+                  isOpen ? "bg-secondary/5" : ""
+                }`}
+              >
+                <span className="flex items-center gap-2.5">
+                  <span className="text-sm font-bold uppercase tracking-wide text-primary">
+                    {group.label}
+                  </span>
+                  <span className="rounded-full bg-secondary/10 px-2 py-0.5 text-xs font-semibold text-secondary">
+                    {group.events.length} jadwal
+                  </span>
+                </span>
+                <Icon
+                  name="expand_more"
+                  className={`text-xl text-on-surface-variant transition-transform duration-200 ${
+                    isOpen ? "rotate-180" : ""
+                  }`}
+                />
+              </button>
+
+              {isOpen && (
+                <div className="overflow-x-auto border-t border-outline-variant/30">
+                  <table className="w-full min-w-[640px] text-left">
+                    <thead>
+                      <tr className="border-b border-outline-variant/30">
+                        <th className="px-5 py-3 text-[11px] font-semibold uppercase tracking-wide text-on-surface-variant">
+                          Tanggal
+                        </th>
+                        <th className="px-3 py-3 text-[11px] font-semibold uppercase tracking-wide text-on-surface-variant">
+                          Waktu
+                        </th>
+                        <th className="px-3 py-3 text-[11px] font-semibold uppercase tracking-wide text-on-surface-variant">
+                          Kegiatan
+                        </th>
+                        <th className="px-3 py-3 text-[11px] font-semibold uppercase tracking-wide text-on-surface-variant">
+                          Kelas
+                        </th>
+                        <th className="px-5 py-3 text-right text-[11px] font-semibold uppercase tracking-wide text-on-surface-variant">
+                          Status
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {group.events.map((event) => {
+                        const meta = ESKUL_META[event.eskul];
+                        const badge = dayBadge(event.date);
+                        const detail = [event.teacher, event.notes].filter(Boolean).join(" — ");
+                        const classLabels = summarizeClasses(event.classes);
+                        return (
+                          <tr
+                            key={event.id}
+                            className="border-b border-outline-variant/20 align-top transition hover:bg-surface-container-lowest"
+                          >
+                            <td className="whitespace-nowrap px-5 py-3 text-sm">
+                              <span className="font-semibold text-on-surface">
+                                {badge.dayShort}, {badge.dayNum}
+                              </span>
+                            </td>
+                            <td className="whitespace-nowrap px-3 py-3 text-sm text-on-surface-variant">
+                              {event.time}
+                            </td>
+                            <td className="px-3 py-3">
+                              <div className="flex items-start gap-2" title={detail || undefined}>
+                                <span
+                                  className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${meta.iconBg}`}
+                                >
+                                  <EskulIcon eskul={event.eskul} className={`h-3.5 w-3.5 ${meta.iconColor}`} />
+                                </span>
+                                <div className="min-w-0">
+                                  <p className="text-sm font-semibold text-on-surface">{event.eskulLabel}</p>
+                                  {event.extra && !event.extra.startsWith("Sesi") ? (
+                                    <p className="text-xs text-on-surface-variant">{event.extra}</p>
+                                  ) : null}
+                                </div>
+                              </div>
+                            </td>
+                            <td className="px-3 py-3">
+                              {classLabels.length > 0 ? (
+                                <div className="flex max-w-[220px] flex-wrap gap-1">
+                                  {classLabels.map((c) => (
+                                    <ClassChip key={c} label={c} />
+                                  ))}
+                                </div>
+                              ) : (
+                                <span className="text-xs italic text-on-surface-variant/70">
+                                  Belum ditentukan
+                                </span>
+                              )}
+                            </td>
+                            <td className="px-5 py-3 text-right">
+                              <StatusChip status={event.statusNormalized} />
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
