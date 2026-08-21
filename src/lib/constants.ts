@@ -20,6 +20,7 @@ export const ESKUL_META: Record<
   {
     label: string;
     sheet: string;
+    description: string;
     chip: string;
     border: string;
     iconBg: string;
@@ -29,6 +30,7 @@ export const ESKUL_META: Record<
   renang: {
     label: "Renang",
     sheet: "Renang",
+    description: "Melatih stamina dan keberanian di air bersama pembina berpengalaman.",
     chip: "bg-sky-50 text-sky-700 ring-1 ring-sky-200",
     border: "border-l-sky-400",
     iconBg: "bg-sky-100",
@@ -37,6 +39,7 @@ export const ESKUL_META: Record<
   panahan: {
     label: "Panahan",
     sheet: "Panahan",
+    description: "Membentuk fokus dan ketenangan lewat olahraga memanah.",
     chip: "bg-amber-50 text-amber-700 ring-1 ring-amber-200",
     border: "border-l-amber-400",
     iconBg: "bg-amber-100",
@@ -45,6 +48,7 @@ export const ESKUL_META: Record<
   berkuda: {
     label: "Berkuda",
     sheet: "Berkuda",
+    description: "Belajar mengendalikan kuda dan membangun keberanian di lapangan terbuka.",
     chip: "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200",
     border: "border-l-emerald-400",
     iconBg: "bg-emerald-100",
@@ -53,6 +57,7 @@ export const ESKUL_META: Record<
   taekwondo: {
     label: "Taekwondo",
     sheet: "Taekwondo",
+    description: "Seni bela diri untuk membangun disiplin, kekuatan, dan rasa percaya diri.",
     chip: "bg-rose-50 text-rose-700 ring-1 ring-rose-200",
     border: "border-l-rose-400",
     iconBg: "bg-rose-100",
@@ -61,6 +66,7 @@ export const ESKUL_META: Record<
   pramuka: {
     label: "Pramuka",
     sheet: "Pramuka",
+    description: "Kegiatan kepanduan yang menumbuhkan kemandirian dan jiwa kepemimpinan.",
     chip: "bg-violet-50 text-violet-700 ring-1 ring-violet-200",
     border: "border-l-violet-400",
     iconBg: "bg-violet-100",
@@ -81,17 +87,17 @@ export const STATUS_BUCKET_META: Record<
   { label: string; dot: string; badge: string }
 > = {
   completed: {
-    label: "Completed",
+    label: "Selesai",
     dot: "bg-status-completed",
     badge: "status-badge-completed",
   },
   upcoming: {
-    label: "Upcoming",
+    label: "Akan Berlangsung",
     dot: "bg-status-upcoming",
     badge: "status-badge-upcoming",
   },
   canceled: {
-    label: "Holiday/Canceled",
+    label: "Libur/Ditiadakan",
     dot: "bg-status-canceled",
     badge: "status-badge-canceled",
   },

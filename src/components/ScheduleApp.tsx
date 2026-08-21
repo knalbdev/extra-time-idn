@@ -1,10 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ESKUL_ORDER } from "@/lib/constants";
 import { isoToday, monthKey, monthLabel } from "@/lib/format";
 import { getAllEvents } from "@/lib/sheets";
 import { EskulEvent, EskulKey, ScheduleResponse } from "@/lib/types";
+import { CursorGlow } from "./CursorGlow";
 import { DashboardView } from "./DashboardView";
 import { MonthOption } from "./ScheduleFilters";
 import { ScheduleView } from "./ScheduleView";
@@ -32,7 +34,7 @@ function writeCache(data: ScheduleResponse) {
   }
 }
 
-export function ScheduleApp() {
+export function ScheduleApp({ onGoHome }: { onGoHome?: () => void }) {
   const [events, setEvents] = useState<EskulEvent[]>([]);
   const [fetchedAt, setFetchedAt] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -40,6 +42,7 @@ export function ScheduleApp() {
 
   const [view, setView] = useState<View>("dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const sidebarRef = useRef<HTMLElement>(null);
 
   const [selectedMonth, setSelectedMonth] = useState(() => monthKey(isoToday()));
   const [selectedClass, setSelectedClass] = useState("all");
@@ -134,11 +137,15 @@ export function ScheduleApp() {
 
   return (
     <div className="flex min-h-screen bg-surface">
+      <CursorGlow darkZoneRef={sidebarRef} />
+
       <Sidebar
+        ref={sidebarRef}
         active={view}
         onNavigate={setView}
         open={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
+        onGoHome={onGoHome}
       />
 
       <div className="min-w-0 flex-1">
@@ -170,24 +177,32 @@ export function ScheduleApp() {
               <div className="h-96 animate-shimmer rounded-xl" />
             </div>
           ) : (
-            <div className="animate-fade-in-up">
-              {view === "dashboard" ? (
-                <DashboardView events={events} />
-              ) : (
-                <ScheduleView
-                  events={events}
-                  filteredEvents={filteredEvents}
-                  months={months}
-                  selectedMonth={selectedMonth}
-                  onMonthChange={setSelectedMonth}
-                  selectedClass={selectedClass}
-                  onClassChange={setSelectedClass}
-                  activeEskuls={activeEskuls}
-                  onToggleEskul={toggleEskul}
-                  onClearFilters={clearFilters}
-                />
-              )}
-            </div>
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={view}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+              >
+                {view === "dashboard" ? (
+                  <DashboardView events={events} />
+                ) : (
+                  <ScheduleView
+                    events={events}
+                    filteredEvents={filteredEvents}
+                    months={months}
+                    selectedMonth={selectedMonth}
+                    onMonthChange={setSelectedMonth}
+                    selectedClass={selectedClass}
+                    onClassChange={setSelectedClass}
+                    activeEskuls={activeEskuls}
+                    onToggleEskul={toggleEskul}
+                    onClearFilters={clearFilters}
+                  />
+                )}
+              </motion.div>
+            </AnimatePresence>
           )}
         </main>
 

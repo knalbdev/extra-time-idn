@@ -1,6 +1,8 @@
 "use client";
 
+import { motion } from "framer-motion";
 import Image from "next/image";
+import { Ref } from "react";
 import { SPREADSHEET_URL } from "@/lib/constants";
 import { Icon } from "./Icon";
 
@@ -8,7 +10,7 @@ export type View = "dashboard" | "schedule";
 
 const NAV_ITEMS: { key: View; label: string; icon: string }[] = [
   { key: "dashboard", label: "Dashboard", icon: "dashboard" },
-  { key: "schedule", label: "Schedule", icon: "calendar_month" },
+  { key: "schedule", label: "Jadwal", icon: "calendar_month" },
 ];
 
 export function Sidebar({
@@ -16,11 +18,15 @@ export function Sidebar({
   onNavigate,
   open,
   onClose,
+  onGoHome,
+  ref,
 }: {
   active: View;
   onNavigate: (view: View) => void;
   open: boolean;
   onClose: () => void;
+  onGoHome?: () => void;
+  ref?: Ref<HTMLElement>;
 }) {
   return (
     <>
@@ -33,11 +39,36 @@ export function Sidebar({
       )}
 
       <aside
-        className={`fixed inset-y-0 left-0 z-50 flex w-[280px] shrink-0 -translate-x-full flex-col bg-primary py-2 text-on-primary transition-transform duration-200 lg:sticky lg:top-0 lg:h-screen lg:translate-x-0 ${
+        ref={ref}
+        className={`fixed inset-y-0 left-0 z-50 flex w-[280px] shrink-0 -translate-x-full flex-col overflow-hidden bg-primary py-2 text-on-primary transition-transform duration-200 lg:sticky lg:top-0 lg:h-screen lg:translate-x-0 ${
           open ? "translate-x-0" : ""
         }`}
       >
-        <div className="flex flex-col items-start gap-3 px-6 py-8">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 opacity-[0.1]"
+          style={{
+            backgroundImage:
+              "radial-gradient(circle, rgba(255,255,255,0.8) 1px, transparent 1px)",
+            backgroundSize: "20px 20px",
+          }}
+        />
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -left-20 top-0 h-64 w-64 rounded-full bg-sky-400/15 blur-[90px]"
+        />
+        <div
+          aria-hidden
+          className="pointer-events-none absolute bottom-0 -right-20 h-64 w-64 rounded-full bg-cyan-300/10 blur-[90px]"
+        />
+
+        <button
+          type="button"
+          onClick={onGoHome}
+          disabled={!onGoHome}
+          title="Kembali ke beranda"
+          className="flex flex-col items-start gap-3 rounded-lg px-6 py-8 text-left transition-colors hover:bg-white/5 disabled:cursor-default disabled:hover:bg-transparent"
+        >
           <Image
             src="/idn.png"
             alt="Logo IDN Akhwat"
@@ -53,30 +84,50 @@ export function Sidebar({
               Portal Ekstrakurikuler
             </p>
           </div>
-        </div>
+        </button>
 
         <div className="mt-2 flex flex-1 flex-col gap-1 px-2">
           {NAV_ITEMS.map((item) => {
             const isActive = active === item.key;
             return (
-              <button
+              <motion.button
                 key={item.key}
                 type="button"
                 onClick={() => {
                   onNavigate(item.key);
                   onClose();
                 }}
-                className={`flex items-center gap-3 rounded-lg px-4 py-3 text-left text-sm font-medium transition-colors duration-200 ${
-                  isActive
-                    ? "rounded-r-lg border-l-4 border-on-primary bg-white/10 text-on-primary"
-                    : "text-on-primary/60 hover:bg-white/5 hover:text-on-primary"
+                whileHover={{ x: isActive ? 0 : 3 }}
+                whileTap={{ scale: 0.97 }}
+                className={`relative flex items-center gap-3 rounded-lg px-4 py-3 text-left text-sm font-medium ${
+                  isActive ? "text-on-primary" : "text-on-primary/60 hover:text-on-primary"
                 }`}
               >
-                <Icon name={item.icon} className="text-xl" filled={isActive} />
-                {item.label}
-              </button>
+                {isActive && (
+                  <motion.span
+                    layoutId="sidebar-active-pill"
+                    className="absolute inset-0 rounded-r-lg border-l-4 border-on-primary bg-white/10"
+                    transition={{ type: "spring", stiffness: 420, damping: 34 }}
+                  />
+                )}
+                <Icon name={item.icon} className="relative z-10 text-xl" filled={isActive} />
+                <span className="relative z-10">{item.label}</span>
+              </motion.button>
             );
           })}
+
+          {onGoHome && (
+            <motion.button
+              type="button"
+              onClick={onGoHome}
+              whileHover={{ x: 3 }}
+              whileTap={{ scale: 0.97 }}
+              className="mt-2 flex items-center gap-3 rounded-lg border-t border-white/10 px-4 pb-1 pt-4 text-left text-sm font-medium text-on-primary/50 hover:text-on-primary"
+            >
+              <Icon name="home" className="text-xl" />
+              Beranda
+            </motion.button>
+          )}
         </div>
 
         <div className="mt-auto flex flex-col gap-2 px-6 py-4">
