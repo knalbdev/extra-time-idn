@@ -17,8 +17,9 @@ export function StatusChip({ status }: { status: StatusKey }) {
   const bucket = STATUS_BUCKET_META[meta.bucket];
   return (
     <span
-      className={`inline-flex items-center whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-semibold ${bucket.badge}`}
+      className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-semibold ${bucket.badge}`}
     >
+      <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${bucket.dot}`} />
       {meta.label}
     </span>
   );

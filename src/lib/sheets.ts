@@ -109,19 +109,33 @@ function parseRenang(rows: string[][]): EskulEvent[] {
   return events;
 }
 
+function normalizeJam(raw: string | undefined, fallback: string): string {
+  const t = clean(raw);
+  if (!t) return fallback;
+  return t.replace(",", ".");
+}
+
 function parsePanahan(rows: string[][]): EskulEvent[] {
   const events: EskulEvent[] = [];
   for (const row of rows.slice(1)) {
     const d = parseIndoDate(row[1]);
     if (!d) continue;
-    const sessions: Array<{ suffix: string; time: string; kelas: number; guru: number; status: number }> = [
-      { suffix: "10", time: "10.00", kelas: 2, guru: 3, status: 4 },
-      { suffix: "13", time: "13.00", kelas: 5, guru: 6, status: 7 },
+    const sessions: Array<{
+      suffix: string;
+      defaultTime: string;
+      kelas: number;
+      jam: number;
+      guru: number;
+      status: number;
+    }> = [
+      { suffix: "10", defaultTime: "10.00", kelas: 2, jam: 3, guru: 4, status: 5 },
+      { suffix: "13", defaultTime: "13.00", kelas: 6, jam: 7, guru: 8, status: 9 },
     ];
     for (const s of sessions) {
       const kelasRaw = row[s.kelas];
       if (!clean(kelasRaw)) continue;
       const classes = extractClasses(kelasRaw);
+      const time = normalizeJam(row[s.jam], s.defaultTime);
       events.push({
         id: `panahan-${d.iso}-${s.suffix}`,
         eskul: "panahan",
@@ -129,14 +143,14 @@ function parsePanahan(rows: string[][]): EskulEvent[] {
         weekNo: clean(row[0]) ?? "",
         date: d.iso,
         dateLabel: d.label,
-        time: s.time,
-        extra: `Sesi ${s.time}`,
+        time,
+        extra: `Sesi ${time}`,
         classes: classes.length ? classes : [kelasRaw.trim()],
         status: clean(row[s.status]) ?? "",
         statusNormalized: normalizeStatus(row[s.status]),
         teacher: clean(row[s.guru]),
-        result: clean(row[8]),
-        notes: clean(row[9]),
+        result: clean(row[10]),
+        notes: clean(row[11]),
       });
     }
   }

@@ -84,6 +84,30 @@ export function summarizeClasses(classes: string[]): string[] {
   return classes;
 }
 
+/**
+ * Splits a free-form event time label into a leading clock reading (for a
+ * fixed-width timeline column) plus an optional note carrying whatever
+ * doesn't fit — a range's end time, a parenthetical, or the whole label
+ * when there's no clock in it at all (e.g. "Ba'da Ashar").
+ */
+export function splitTimeForTimeline(raw: string): { clock: string; note?: string } {
+  const range = raw.match(/^(\d{1,2}[.,:]\d{2})\s*-\s*(\d{1,2}[.,:]\d{2})\s*(.*)$/);
+  if (range) {
+    const [, start, end, rest] = range;
+    const note = ["s.d. " + end.replace(",", "."), rest.replace(/^\(|\)$/g, "").trim()]
+      .filter(Boolean)
+      .join(" · ");
+    return { clock: start.replace(",", "."), note };
+  }
+  const single = raw.match(/^(\d{1,2}[.,:]\d{2})\s*(.*)$/);
+  if (single) {
+    const [, clock, rest] = single;
+    const note = rest.replace(/^\(|\)$/g, "").trim();
+    return { clock: clock.replace(",", "."), note: note || undefined };
+  }
+  return { clock: "—", note: raw };
+}
+
 export function formatUpdatedAt(iso: string): string {
   const d = new Date(iso);
   const datePart = d.toLocaleDateString("id-ID", {
