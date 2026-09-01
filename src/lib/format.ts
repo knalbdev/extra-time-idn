@@ -47,6 +47,20 @@ export function monthLabel(key: string): string {
   return `${MONTH_LABELS_ID[m - 1]} ${y}`;
 }
 
+/** 1-based week-of-month bucket: days 1-7 -> 1, 8-14 -> 2, 15-21 -> 3, 22-28 -> 4, 29-31 -> 5. */
+export function weekOfMonth(iso: string): number {
+  return Math.ceil(parseIso(iso).getDate() / 7);
+}
+
+/** Inclusive day-of-month range covered by a week-of-month bucket, clamped to the month's length. */
+export function weekOfMonthRange(monthKeyValue: string, week: number): { startDay: number; endDay: number } {
+  const [y, m] = monthKeyValue.split("-").map(Number);
+  const daysInMonth = new Date(y, m, 0).getDate();
+  const startDay = (week - 1) * 7 + 1;
+  const endDay = Math.min(week * 7, daysInMonth);
+  return { startDay, endDay };
+}
+
 /** Monday..Sunday range (inclusive) containing the given ISO date. */
 export function weekRangeOf(iso: string): { start: string; end: string } {
   const d = parseIso(iso);

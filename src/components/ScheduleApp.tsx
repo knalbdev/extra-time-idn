@@ -8,6 +8,7 @@ import { getAllEvents } from "@/lib/sheets";
 import { EskulEvent, EskulKey, ScheduleResponse } from "@/lib/types";
 import { CursorGlow } from "./CursorGlow";
 import { DashboardView } from "./DashboardView";
+import { ReportView } from "./ReportView";
 import { MonthOption } from "./ScheduleFilters";
 import { ScheduleView } from "./ScheduleView";
 import { Sidebar, View } from "./Sidebar";
@@ -187,6 +188,8 @@ export function ScheduleApp({ onGoHome }: { onGoHome?: () => void }) {
               >
                 {view === "dashboard" ? (
                   <DashboardView events={events} />
+                ) : view === "laporan" ? (
+                  <ReportView events={events} />
                 ) : (
                   <ScheduleView
                     events={events}

@@ -6,11 +6,12 @@ import { Ref } from "react";
 import { SPREADSHEET_URL } from "@/lib/constants";
 import { Icon } from "./Icon";
 
-export type View = "dashboard" | "schedule";
+export type View = "dashboard" | "schedule" | "laporan";
 
 const NAV_ITEMS: { key: View; label: string; icon: string }[] = [
   { key: "dashboard", label: "Dashboard", icon: "dashboard" },
   { key: "schedule", label: "Jadwal", icon: "calendar_month" },
+  { key: "laporan", label: "Laporan", icon: "summarize" },
 ];
 
 export function Sidebar({
