@@ -21,11 +21,11 @@ export function ScheduleControls({
   totalCount: number;
 }) {
   return (
-    <div className="card rounded-lg">
-      <div className="flex flex-col gap-2.5 p-4">
+    <div className="card overflow-hidden rounded-2xl">
+      <div className="flex flex-col gap-4 p-5">
         <span className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant">
           <Icon name="filter_alt" className="text-sm" />
-          Filter Ekstrakurikuler
+          Pilih aktivitas
           <span className="font-normal normal-case text-on-surface-variant/60">
             &middot; klik untuk tampilkan/sembunyikan
           </span>
@@ -40,17 +40,18 @@ export function ScheduleControls({
                 <motion.button
                   key={key}
                   type="button"
+                  aria-pressed={active}
                   onClick={() => onToggleEskul(key)}
                   whileHover={{ y: -2 }}
                   whileTap={{ scale: 0.94 }}
                   transition={{ type: "spring", stiffness: 400, damping: 20 }}
-                  className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold ${
+                  className={`inline-flex items-center gap-2 rounded-xl px-5 py-3 text-xs font-semibold ${
                     active
                       ? `${meta.chip} shadow-sm`
                       : "bg-surface-container text-on-surface-variant/50 ring-1 ring-outline-variant hover:bg-surface-container-high hover:text-on-surface-variant"
                   }`}
                 >
-                  <EskulIcon eskul={key} className="h-3.5 w-3.5" />
+                  <EskulIcon eskul={key} className="h-4 w-4" />
                   {meta.label}
                 </motion.button>
               );
@@ -67,7 +68,7 @@ export function ScheduleControls({
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-outline-variant/40 px-4 py-3">
+      <div className="flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-outline-variant/40 px-5 py-3">
         <span className="text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant">
           Keterangan:
         </span>

@@ -61,7 +61,7 @@ export function ScheduleTable({
       <motion.section
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
-        className="card flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-outline-variant/60 p-12 text-center"
+        className="card flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-outline-variant/60 p-12 text-center"
       >
         <motion.div
           animate={{ y: [0, -6, 0] }}
@@ -80,7 +80,7 @@ export function ScheduleTable({
           onClick={onClearFilters}
           whileHover={{ scale: 1.03 }}
           whileTap={{ scale: 0.96 }}
-          className="mt-6 rounded-lg border border-outline px-4 py-2 text-sm font-semibold text-primary transition hover:bg-surface-container"
+          className="mt-6 rounded-xl border border-outline px-4 py-2 text-sm font-semibold text-primary transition hover:bg-surface-container"
         >
           Hapus Filter
         </motion.button>
@@ -91,9 +91,9 @@ export function ScheduleTable({
   const allOpen = groups.length > 0 && groups.every((g) => expanded.has(g.key));
 
   return (
-    <section className="card overflow-hidden rounded-xl">
-      <div className="flex items-center justify-between border-b border-outline-variant/40 px-5 py-3.5">
-        <h2 className="text-lg font-heading font-semibold text-primary">Jadwal Terperinci</h2>
+    <section className="card overflow-hidden rounded-2xl">
+      <div className="flex items-center justify-between gap-3 border-b border-outline-variant/40 px-5 py-5">
+        <div><p className="eyebrow">AGENDA LENGKAP</p><h2 className="mt-1 text-xl font-heading font-bold text-primary">Jadwal terperinci</h2></div>
         <motion.button
           type="button"
           onClick={() =>
@@ -127,12 +127,12 @@ export function ScheduleTable({
                   })
                 }
                 aria-expanded={isOpen}
-                className={`flex w-full items-center justify-between px-5 py-3 text-left transition hover:bg-secondary/5 ${
+                className={`flex w-full items-center justify-between px-5 py-4 text-left transition hover:bg-secondary/5 ${
                   isOpen ? "bg-secondary/5" : ""
                 }`}
               >
                 <span className="flex items-center gap-2.5">
-                  <span className="text-sm font-bold uppercase tracking-wide text-primary">
+                  <span className="text-sm font-bold tracking-tight text-primary">
                     {group.label}
                   </span>
                   <span className="rounded-full bg-secondary/10 px-2 py-0.5 text-xs font-semibold text-secondary">
@@ -173,12 +173,12 @@ export function ScheduleTable({
                         <motion.div
                           key={event.id}
                           variants={fadeInItem}
-                          className="flex flex-col gap-2 p-4"
+                          className="m-3 flex flex-col gap-3 rounded-xl border border-outline-variant/60 bg-surface/40 p-4"
                         >
                           <div className="flex items-start justify-between gap-2">
                             <div className="flex items-start gap-2.5">
                               <span
-                                className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${meta.iconBg}`}
+                                className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl ${meta.iconBg}`}
                               >
                                 <EskulIcon eskul={event.eskul} className={`h-4 w-4 ${meta.iconColor}`} />
                               </span>
@@ -211,7 +211,7 @@ export function ScheduleTable({
                   {/* Full table from md up, where the width fits without scrolling. */}
                   <div className="hidden overflow-x-auto md:block">
                     <table className="w-full text-left">
-                      <thead>
+                      <thead className="bg-surface/80">
                         <tr className="border-b border-outline-variant/30">
                           <th className="px-5 py-3 text-[11px] font-semibold uppercase tracking-wide text-on-surface-variant">
                             Tanggal
@@ -239,7 +239,7 @@ export function ScheduleTable({
                           return (
                             <tr
                               key={event.id}
-                              className="border-b border-outline-variant/20 align-top transition hover:bg-surface-container-lowest"
+                              className="border-b border-outline-variant/20 align-middle transition hover:bg-blue-50/50"
                             >
                               <td className="whitespace-nowrap px-5 py-3 text-sm">
                                 <span className="font-semibold text-on-surface">
@@ -252,9 +252,9 @@ export function ScheduleTable({
                               <td className="px-3 py-3">
                                 <div className="flex items-start gap-2" title={detail || undefined}>
                                   <span
-                                    className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${meta.iconBg}`}
+                                    className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${meta.iconBg}`}
                                   >
-                                    <EskulIcon eskul={event.eskul} className={`h-3.5 w-3.5 ${meta.iconColor}`} />
+                                    <EskulIcon eskul={event.eskul} className={`h-4 w-4 ${meta.iconColor}`} />
                                   </span>
                                   <div className="min-w-0">
                                     <p className="text-sm font-semibold text-on-surface">{event.eskulLabel}</p>

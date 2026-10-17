@@ -17,7 +17,7 @@ export function Topbar({
   onMenuClick: () => void;
 }) {
   return (
-    <header className="sticky top-0 z-30 flex h-16 items-center border-b border-outline-variant bg-surface px-4 sm:px-8">
+    <header className="sticky top-0 z-30 flex h-16 items-center border-b border-outline-variant bg-white/85 backdrop-blur-xl px-4 sm:px-8">
       <button
         type="button"
         onClick={onMenuClick}
@@ -27,6 +27,7 @@ export function Topbar({
         <Icon name="menu" className="text-xl" />
       </button>
 
+      <div className="ml-3 hidden sm:block"><p className="text-xs font-semibold text-primary">Portal Ekstrakurikuler</p><p className="mt-0.5 text-[10px] text-on-surface-variant">SMP SMK IDN Akhwat</p></div>
       <div className="ml-auto flex items-center gap-3">
         <motion.span
           key={fetchedAt ?? "loading"}

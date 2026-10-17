@@ -7,16 +7,16 @@
   --color-secondary: #0054cd;
   --color-on-secondary: #ffffff;
 
-  --color-surface: #f8f9fa;
+  --color-surface: #f5f7fb;
   --color-surface-container-lowest: #ffffff;
   --color-surface-container-low: #f3f4f5;
   --color-surface-container: #edeeef;
   --color-surface-container-high: #e7e8e9;
 
   --color-on-surface: #191c1d;
-  --color-on-surface-variant: #44474f;
+  --color-on-surface-variant: #68758a;
   --color-outline: #747780;
-  --color-outline-variant: #c4c6d0;
+  --color-outline-variant: #e2e8f0;
 
   --color-error: #ba1a1a;
   --color-error-container: #ffdad6;
@@ -66,6 +66,12 @@ body {
 }
 
 .material-symbols-outlined {
+  display: inline-block;
+  width: 1em;
+  flex-shrink: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  vertical-align: middle;
   font-variation-settings:
     "FILL" 0,
     "wght" 400,
@@ -95,7 +101,7 @@ body {
 .card {
   background: var(--color-surface-container-lowest);
   border: 1px solid var(--color-outline-variant);
-  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.06);
+  box-shadow: 0 4px 24px -12px rgba(24, 49, 88, 0.12);
 }
 
 ::selection {
@@ -167,4 +173,31 @@ body {
 
 .animate-marquee:hover {
   animation-play-state: paused;
+}
+
+.eyebrow { font-size: 10px; font-weight: 700; letter-spacing: .16em; color: #718198; }
+.dashboard-hero { background: linear-gradient(115deg, #102d58 0%, #174d91 65%, #247d9f 100%); }
+.hero-orbit { position: absolute; z-index: -1; width: 440px; height: 440px; border: 1px solid #ffffff18; border-radius: 50%; right: -50px; top: -70px; box-shadow: 0 0 0 55px #ffffff06, 0 0 0 110px #ffffff05; }
+button, a, select { -webkit-tap-highlight-color: transparent; }
+button:not(:disabled), a { cursor: pointer; }
+:focus-visible { outline: 3px solid #60a5fa; outline-offset: 4px; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
+}
+
+@media print {
+  @page { size: A4; margin: 12mm; }
+  body { background: white; color: #111827; }
+  body * { visibility: hidden; }
+  #coach-report, #coach-report * { visibility: visible; }
+  #coach-report { position: absolute; inset: 0 auto auto 0; width: 100%; padding: 0; border: 0; box-shadow: none; border-radius: 0; }
+  .print-hide { display: none !important; }
+  #coach-report .report-table { overflow: visible; }
+  #coach-report table { width: 100%; font-size: 9px; table-layout: fixed; }
+  #coach-report th, #coach-report td { min-width: 0; white-space: normal; overflow-wrap: anywhere; padding: 5px; }
+  #coach-report th:first-child { width: 30%; }
+  #coach-report thead { display: table-header-group; }
+  #coach-report tr { break-inside: avoid; }
+  #coach-report .report-student { break-inside: auto; }
+  #coach-report .report-student h4 { break-after: avoid; }
 }

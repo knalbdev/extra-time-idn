@@ -16,6 +16,7 @@ import { EskulEvent, EskulKey } from "@/lib/types";
 import { AnimatedNumber } from "./AnimatedNumber";
 import { ClassChip, StatusChip } from "./Badges";
 import { EskulIcon } from "./EskulIcon";
+import { PageHeading } from "./PageHeading";
 import { Icon } from "./Icon";
 
 interface EskulReport {
@@ -101,16 +102,9 @@ export function ReportView({ events }: { events: EskulEvent[] }) {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-col items-start justify-between gap-4 md:flex-row md:items-end">
-        <div>
-          <h1 className="bg-gradient-to-r from-primary to-secondary bg-clip-text font-heading text-2xl font-bold tracking-tight text-transparent md:text-3xl">
-            Laporan Pelaksanaan
-          </h1>
-          <p className="mt-1 text-sm text-on-surface-variant">
-            Rekap jumlah dan tanggal pelaksanaan tiap ekstrakurikuler.
-          </p>
-        </div>
-
+      <PageHeading eyebrow="CATATAN PERJALANAN" title="Laporan Pelaksanaan" description="Lihat sejauh mana kegiatan berjalan. Telusuri progres dan riwayat pelaksanaan setiap ekstrakurikuler." icon="monitoring">
+      <div className="card flex flex-col gap-5 rounded-2xl p-5 lg:flex-row lg:items-center lg:justify-between">
+        <div><p className="flex items-center gap-2 text-sm font-semibold text-primary"><Icon name="date_range" className="text-lg text-secondary" />Periode laporan</p><p className="mt-1 text-xs text-on-surface-variant">Tinjau satu pekan, satu bulan, atau seluruh tahun ajaran.</p></div>
         <div className="flex w-full flex-wrap gap-3 sm:w-auto">
           <label className="block w-full text-sm sm:w-52">
             <span className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-on-surface-variant">
@@ -120,7 +114,7 @@ export function ReportView({ events }: { events: EskulEvent[] }) {
               <select
                 value={selectedMonth}
                 onChange={(e) => handleMonthChange(e.target.value)}
-                className="w-full appearance-none rounded-lg border border-outline-variant bg-white px-3.5 py-2.5 pr-9 text-sm font-medium text-on-surface transition hover:border-secondary/50 focus:border-secondary focus:outline-none focus:ring-2 focus:ring-secondary/15"
+                className="w-full appearance-none rounded-xl border border-outline-variant bg-white px-3.5 py-3 pr-9 text-sm font-medium text-on-surface transition hover:border-secondary/50 focus:border-secondary focus:outline-none focus:ring-2 focus:ring-secondary/15"
               >
                 <option value="all">Sepanjang Tahun Ajaran</option>
                 {months.map((m) => (
@@ -147,7 +141,7 @@ export function ReportView({ events }: { events: EskulEvent[] }) {
                   setSelectedWeek(e.target.value === "all" ? "all" : Number(e.target.value))
                 }
                 disabled={selectedMonth === "all"}
-                className="w-full appearance-none rounded-lg border border-outline-variant bg-white px-3.5 py-2.5 pr-9 text-sm font-medium text-on-surface transition hover:border-secondary/50 focus:border-secondary focus:outline-none focus:ring-2 focus:ring-secondary/15 disabled:cursor-not-allowed disabled:bg-surface-container disabled:text-on-surface-variant/60"
+                className="w-full appearance-none rounded-xl border border-outline-variant bg-white px-3.5 py-3 pr-9 text-sm font-medium text-on-surface transition hover:border-secondary/50 focus:border-secondary focus:outline-none focus:ring-2 focus:ring-secondary/15 disabled:cursor-not-allowed disabled:bg-surface-container disabled:text-on-surface-variant/60"
               >
                 <option value="all">Semua Pekan</option>
                 {weeksInSelectedMonth.map((week) => {
@@ -167,38 +161,16 @@ export function ReportView({ events }: { events: EskulEvent[] }) {
           </label>
         </div>
       </div>
+      </PageHeading>
 
-      <motion.div
-        variants={fadeInItem}
-        initial="hidden"
-        animate="show"
-        className="card grid grid-cols-2 divide-x divide-y divide-outline-variant/40 rounded-xl sm:grid-cols-4 sm:divide-y-0"
-      >
-        <div className="p-5">
-          <p className="text-xs font-medium text-on-surface-variant">Sudah Terlaksana</p>
-          <p className="mt-1 font-heading text-2xl font-bold text-on-surface">
-            <AnimatedNumber value={totalCompleted} />
-          </p>
-        </div>
-        <div className="p-5">
-          <p className="text-xs font-medium text-on-surface-variant">Total Dijadwalkan</p>
-          <p className="mt-1 font-heading text-2xl font-bold text-on-surface">
-            <AnimatedNumber value={totalScheduled} />
-          </p>
-        </div>
-        <div className="p-5">
-          <p className="text-xs font-medium text-on-surface-variant">Ekskul Tercatat</p>
-          <p className="mt-1 font-heading text-2xl font-bold text-on-surface">
-            <AnimatedNumber value={activeEskulCount} />
-          </p>
-        </div>
-        <div className="p-5">
-          <p className="text-xs font-medium text-on-surface-variant">Rentang Tanggal</p>
-          <p className="mt-1 font-heading text-sm font-bold leading-tight text-on-surface">
-            {dateRangeLabel}
-          </p>
-        </div>
-      </motion.div>
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        {[{ label: "Sudah terlaksana", value: totalCompleted, icon: "task_alt", color: "bg-emerald-50 text-emerald-600" }, { label: "Total dijadwalkan", value: totalScheduled, icon: "event_note", color: "bg-blue-50 text-blue-600" }, { label: "Ekskul tercatat", value: activeEskulCount, icon: "interests", color: "bg-violet-50 text-violet-600" }].map((stat) => <div key={stat.label} className="card rounded-2xl p-5"><span className={`flex h-10 w-10 items-center justify-center rounded-xl ${stat.color}`}><Icon name={stat.icon} className="text-xl" /></span><p className="mt-4 font-heading text-3xl font-bold text-primary"><AnimatedNumber value={stat.value} /></p><p className="mt-1 text-xs text-on-surface-variant">{stat.label}</p></div>)}
+        <div className="card rounded-2xl p-5"><span className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-50 text-amber-600"><Icon name="date_range" className="text-xl" /></span><p className="mt-4 text-sm font-bold leading-relaxed text-primary">{dateRangeLabel}</p><p className="mt-1 text-xs text-on-surface-variant">Rentang tanggal</p></div>
+      </div>
+
+      <section className="dashboard-hero relative isolate overflow-hidden rounded-2xl p-6 text-white sm:p-7"><div aria-hidden className="hero-orbit" /><div className="relative flex flex-wrap items-center justify-between gap-5"><div><p className="text-[10px] font-semibold tracking-[.16em] text-blue-100/70">PROGRES PERIODE TERPILIH</p><h2 className="mt-2 font-heading text-xl font-bold">Setiap kegiatan, satu langkah maju.</h2><p className="mt-2 text-xs text-blue-100/80">{totalCompleted} dari {totalScheduled} jadwal tercatat sudah terlaksana.</p></div><p className="font-heading text-5xl font-bold">{totalScheduled ? Math.round(totalCompleted / totalScheduled * 100) : 0}<span className="text-2xl text-blue-200">%</span></p></div><div className="relative mt-5 h-2 overflow-hidden rounded-full bg-white/15"><div className="h-full rounded-full bg-teal-300 transition-all duration-500" style={{ width: `${totalScheduled ? totalCompleted / totalScheduled * 100 : 0}%` }} /></div></section>
+      <div className="flex flex-wrap items-end justify-between gap-2"><div><p className="eyebrow">DETAIL PROGRAM</p><h2 className="mt-1 font-heading text-xl font-bold text-primary">Progres setiap ekstrakurikuler</h2></div><p className="text-xs text-on-surface-variant">Pilih program untuk melihat riwayat kegiatan</p></div>
+      {scopedEvents.length === 0 && <div className="card flex flex-col items-center rounded-2xl p-8 text-center"><Icon name="query_stats" className="text-4xl text-secondary/50" /><p className="mt-3 text-sm font-semibold text-primary">Belum ada kegiatan pada periode ini</p><button onClick={() => handleMonthChange("all")} className="mt-4 rounded-xl bg-blue-50 px-4 py-2 text-xs font-semibold text-secondary">Lihat seluruh periode</button></div>}
 
       <motion.div
         variants={staggerContainer}
@@ -214,23 +186,23 @@ export function ReportView({ events }: { events: EskulEvent[] }) {
             <motion.section
               key={report.eskul}
               variants={fadeInItem}
-              className="card overflow-hidden rounded-xl"
+              className="card overflow-hidden rounded-2xl"
             >
               <button
                 type="button"
                 onClick={() => toggle(report.eskul)}
                 disabled={report.total === 0}
                 aria-expanded={isOpen}
-                className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left transition hover:bg-secondary/5 disabled:cursor-default disabled:hover:bg-transparent"
+                className="flex w-full items-center justify-between gap-4 px-5 py-6 text-left transition hover:bg-secondary/5 disabled:cursor-default disabled:hover:bg-transparent"
               >
                 <div className="flex items-center gap-3">
                   <span
-                    className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${meta.iconBg}`}
+                    className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${meta.iconBg}`}
                   >
                     <EskulIcon eskul={report.eskul} className={`h-5 w-5 ${meta.iconColor}`} />
                   </span>
                   <div>
-                    <p className="font-heading text-base font-semibold text-on-surface">
+                    <p className="font-heading text-lg font-bold text-on-surface">
                       {report.label}
                     </p>
                     <p className="text-xs text-on-surface-variant">
@@ -242,7 +214,7 @@ export function ReportView({ events }: { events: EskulEvent[] }) {
                 </div>
 
                 <div className="flex items-center gap-3">
-                  <div className="hidden w-28 flex-col gap-1 sm:flex">
+                  <div className="flex w-14 shrink-0 flex-col gap-2 sm:w-28">
                     <div className="h-1.5 w-full overflow-hidden rounded-full bg-surface-container">
                       <motion.div
                         initial={{ width: 0 }}
@@ -276,11 +248,11 @@ export function ReportView({ events }: { events: EskulEvent[] }) {
                     transition={{ duration: 0.32, ease: [0.16, 1, 0.3, 1] }}
                     className="overflow-hidden border-t border-outline-variant/30"
                   >
-                    <ul className="divide-y divide-outline-variant/20">
+                    <ul className="flex flex-col gap-2 bg-surface/50 p-3 sm:p-4">
                       {report.events.map((event) => (
                         <li
                           key={event.id}
-                          className="flex flex-wrap items-center justify-between gap-2 px-5 py-3"
+                          className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-outline-variant/60 bg-white px-4 py-4"
                         >
                           <div className="min-w-0">
                             <p className="text-sm font-semibold text-on-surface">

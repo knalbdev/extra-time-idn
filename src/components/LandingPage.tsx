@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import Image from "next/image";
+import Link from "next/link";
 import { useRef } from "react";
 import { ESKUL_META, ESKUL_ORDER } from "@/lib/constants";
 import { fadeInItem, staggerContainer } from "@/lib/motion";
@@ -24,7 +25,7 @@ export function LandingPage({
     <div className="min-h-screen bg-surface">
       <CursorGlow darkZoneRef={heroRef} />
 
-      <header ref={heroRef} className="relative isolate overflow-hidden bg-primary text-on-primary">
+      <header ref={heroRef} className="relative isolate mx-3 mt-3 overflow-hidden rounded-[2rem] bg-primary text-on-primary sm:mx-5 sm:mt-5">
         <Image
           src="/sekolah.jpg"
           alt="SMP SMK IDN Akhwat"
@@ -81,7 +82,7 @@ export function LandingPage({
             transition={{ delay: 0.22, duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
             className="mt-3 bg-gradient-to-r from-white via-sky-100 to-cyan-300 bg-clip-text font-heading text-3xl font-bold tracking-tight text-transparent sm:text-5xl"
           >
-            Portal Ekstrakurikuler
+            Temukan Potensi Terbaikmu
           </motion.h1>
           <motion.p
             initial={{ opacity: 0, y: 14 }}
@@ -100,7 +101,7 @@ export function LandingPage({
             transition={{ delay: 0.4, duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
             whileHover={{ scale: 1.04, boxShadow: "0 0 40px rgba(56,189,248,0.45)" }}
             whileTap={{ scale: 0.96 }}
-            className="mt-8 inline-flex items-center gap-2 rounded-lg bg-white px-6 py-3 text-sm font-semibold text-primary shadow-md"
+            className="mt-8 inline-flex items-center gap-2 rounded-xl bg-white px-6 py-3 text-sm font-semibold text-primary shadow-md"
           >
             Lihat Jadwal
             <Icon name="arrow_forward" className="text-lg" />
@@ -133,7 +134,7 @@ export function LandingPage({
                 variants={fadeInItem}
                 whileHover={{ y: -3 }}
                 transition={{ type: "spring", stiffness: 320, damping: 22 }}
-                className="card flex items-center gap-3 rounded-xl px-4 py-3"
+                className="card flex items-center gap-3 rounded-2xl px-4 py-3"
               >
                 <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${meta.iconBg}`}>
                   <EskulIcon eskul={key} className={`h-5 w-5 ${meta.iconColor}`} />
@@ -172,14 +173,16 @@ export function LandingPage({
             onClick={onEnter}
             whileHover={{ scale: 1.04 }}
             whileTap={{ scale: 0.96 }}
-            className="inline-flex items-center gap-2 rounded-lg bg-primary px-6 py-3 text-sm font-semibold text-on-primary shadow-sm"
+            className="inline-flex items-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-on-primary shadow-sm"
           >
-            Buka Portal Ekstrakurikuler
+            Buka Temukan Potensi Terbaikmu
             <Icon name="arrow_forward" className="text-lg" />
           </MagneticButton>
         </div>
       </main>
 
+      <div className="mx-auto mb-12 flex max-w-5xl flex-wrap items-center justify-between gap-4 px-6"><div><p className="text-sm font-semibold text-primary">Ruang untuk para pembimbing</p><p className="mt-1 text-xs text-on-surface-variant">Masuk untuk mencatat materi, absensi, dan penilaian.</p></div><Link href="/coach" className="inline-flex items-center gap-2 rounded-xl border border-outline-variant bg-white px-5 py-3 text-sm font-semibold text-primary">Portal Coach<Icon name="arrow_forward" className="text-lg" /></Link></div>
+      <div className="mx-auto mb-12 max-w-5xl px-6"><Link href="/pendamping" className="card flex flex-wrap items-center justify-between gap-4 rounded-2xl p-5 transition hover:border-blue-200"><div><p className="text-sm font-semibold text-primary">Portal Pendamping Ekskul</p><p className="mt-1 text-xs text-on-surface-variant">Dokumentasi kegiatan, pendamping, kelas, dan ekskul.</p></div><span className="rounded-full bg-amber-50 px-3 py-2 text-[10px] font-semibold text-amber-800">Dalam pengembangan</span></Link></div>
       <footer className="border-t border-outline-variant/50 bg-white/60">
         <div className="mx-auto flex max-w-5xl flex-col items-center gap-2 px-6 py-8 text-center">
           <p className="text-xs text-on-surface-variant/70">&copy; IDN Akhwat 2026</p>

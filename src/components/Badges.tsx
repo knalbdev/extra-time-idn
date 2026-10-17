@@ -27,7 +27,7 @@ export function StatusChip({ status }: { status: StatusKey }) {
 
 export function ClassChip({ label }: { label: string }) {
   return (
-    <span className="inline-flex items-center rounded-md bg-surface-container px-2 py-0.5 text-xs font-medium text-on-surface-variant">
+    <span className="inline-flex items-center rounded-lg border border-outline-variant/60 bg-surface px-2 py-1 text-xs font-medium text-on-surface-variant">
       {label}
     </span>
   );

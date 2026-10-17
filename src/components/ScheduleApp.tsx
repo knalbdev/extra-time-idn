@@ -187,7 +187,7 @@ export function ScheduleApp({ onGoHome }: { onGoHome?: () => void }) {
                 transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
               >
                 {view === "dashboard" ? (
-                  <DashboardView events={events} />
+                  <DashboardView events={events} onViewSchedule={() => setView("schedule")} />
                 ) : view === "laporan" ? (
                   <ReportView events={events} />
                 ) : (

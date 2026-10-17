@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import Image from "next/image";
+import Link from "next/link";
 import { Ref } from "react";
 import { SPREADSHEET_URL } from "@/lib/constants";
 import { Icon } from "./Icon";
@@ -41,7 +42,7 @@ export function Sidebar({
 
       <aside
         ref={ref}
-        className={`fixed inset-y-0 left-0 z-50 flex w-[280px] shrink-0 -translate-x-full flex-col overflow-hidden bg-primary py-2 text-on-primary transition-transform duration-200 lg:sticky lg:top-0 lg:h-screen lg:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-50 flex w-[248px] shrink-0 -translate-x-full flex-col overflow-hidden bg-[#102544] py-2 text-on-primary transition-transform duration-200 lg:sticky lg:top-0 lg:h-screen lg:translate-x-0 ${
           open ? "translate-x-0" : ""
         }`}
       >
@@ -68,17 +69,17 @@ export function Sidebar({
           onClick={onGoHome}
           disabled={!onGoHome}
           title="Kembali ke beranda"
-          className="flex flex-col items-start gap-3 rounded-lg px-6 py-8 text-left transition-colors hover:bg-white/5 disabled:cursor-default disabled:hover:bg-transparent"
+          className="flex flex-col items-start gap-3 rounded-lg px-6 py-7 text-left transition-colors hover:bg-white/5 disabled:cursor-default disabled:hover:bg-transparent"
         >
           <Image
             src="/idn.png"
             alt="Logo IDN Akhwat"
             width={64}
             height={64}
-            className="h-16 w-16 shrink-0 rounded-lg object-contain"
+            className="h-12 w-12 shrink-0 rounded-lg object-contain"
           />
           <div className="min-w-0">
-            <h1 className="font-heading text-lg font-bold leading-tight text-on-primary">
+            <h1 className="font-heading text-base font-bold leading-tight text-on-primary">
               SMP SMK IDN Akhwat
             </h1>
             <p className="text-[11px] font-semibold uppercase tracking-wide text-on-primary/60">
@@ -87,7 +88,8 @@ export function Sidebar({
           </div>
         </button>
 
-        <div className="mt-2 flex flex-1 flex-col gap-1 px-2">
+        <p className="px-8 pb-3 pt-4 text-[10px] font-semibold tracking-[0.18em] text-white/35">WORKSPACE</p>
+        <div className="mt-2 flex flex-1 flex-col gap-2 px-4">
           {NAV_ITEMS.map((item) => {
             const isActive = active === item.key;
             return (
@@ -107,7 +109,7 @@ export function Sidebar({
                 {isActive && (
                   <motion.span
                     layoutId="sidebar-active-pill"
-                    className="absolute inset-0 rounded-r-lg border-l-4 border-on-primary bg-white/10"
+                    className="absolute inset-0 rounded-xl border border-white/15 bg-white/10"
                     transition={{ type: "spring", stiffness: 420, damping: 34 }}
                   />
                 )}
@@ -116,6 +118,10 @@ export function Sidebar({
               </motion.button>
             );
           })}
+
+          <Link href="/coach" className="flex items-center gap-3 rounded-xl border border-white/10 px-4 py-3 text-sm font-medium text-white/80 transition hover:bg-white/10"><Icon name="sports" className="text-xl" />Portal Coach<span className="ml-auto text-[9px] text-white/50">LOGIN</span></Link>
+
+          <Link href="/pendamping" className="flex items-center gap-3 rounded-xl border border-white/10 px-4 py-3 text-sm font-medium text-white/80 transition hover:bg-white/10"><Icon name="photo_library" className="text-xl" /><span>Portal Pendamping<span className="mt-1 block text-[9px] font-normal text-white/50">Dalam pengembangan</span></span></Link>
 
           {onGoHome && (
             <motion.button

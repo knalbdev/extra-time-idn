@@ -9,7 +9,7 @@ export interface MonthOption {
 }
 
 const selectClass =
-  "w-full appearance-none rounded-lg border border-outline-variant bg-white px-3.5 py-2.5 pr-9 text-sm font-medium text-on-surface transition hover:border-secondary/50 focus:border-secondary focus:outline-none focus:ring-2 focus:ring-secondary/15";
+  "w-full appearance-none rounded-xl border border-outline-variant bg-white px-3.5 py-3 pr-9 text-sm font-medium text-on-surface transition hover:border-secondary/50 focus:border-secondary focus:outline-none focus:ring-2 focus:ring-secondary/15";
 
 export function ScheduleFilters({
   months,
@@ -25,7 +25,7 @@ export function ScheduleFilters({
   onClassChange: (v: string) => void;
 }) {
   return (
-    <div className="flex flex-wrap items-center gap-3">
+    <div className="grid w-full grid-cols-1 gap-3 sm:w-auto sm:grid-cols-2">
       <label className="block w-full text-sm sm:w-44">
         <span className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-on-surface-variant">
           Bulan

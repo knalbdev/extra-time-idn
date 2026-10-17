@@ -2,13 +2,15 @@
 
 import { motion } from "framer-motion";
 import { useMemo } from "react";
-import { ESKUL_ORDER, STATUS_BUCKET_META, STATUS_META } from "@/lib/constants";
+import { STATUS_BUCKET_META, STATUS_META } from "@/lib/constants";
 import { nextUpcomingEvent } from "@/lib/schedule";
 import { EskulEvent, EskulKey, StatusBucket } from "@/lib/types";
 import { AnimatedNumber } from "./AnimatedNumber";
 import { MonthOption, ScheduleFilters } from "./ScheduleFilters";
 import { NextActivityCard } from "./NextActivityCard";
 import { ScheduleControls } from "./ScheduleControls";
+import { PageHeading } from "./PageHeading";
+import { Icon } from "./Icon";
 import { ScheduleTable } from "./ScheduleTable";
 
 const BUCKET_ORDER: StatusBucket[] = ["completed", "upcoming", "canceled"];
@@ -51,15 +53,9 @@ export function ScheduleView({
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-col items-start justify-between gap-4 md:flex-row md:items-end">
-        <div>
-          <h1 className="bg-gradient-to-r from-primary to-secondary bg-clip-text font-heading text-2xl font-bold tracking-tight text-transparent md:text-3xl">
-            Jadwal Ekstrakurikuler
-          </h1>
-          <p className="mt-1 text-sm text-on-surface-variant">
-            Tahun Ajaran 2026/2027 &middot; {ESKUL_ORDER.length} ekstrakurikuler aktif
-          </p>
-        </div>
+      <PageHeading eyebrow="RENCANAKAN AKTIVITASMU" title="Jadwal Ekstrakurikuler" description="Temukan kegiatan, siapkan waktumu. Semua agenda tahun ajaran 2026/2027 dalam satu tempat." icon="calendar_month">
+      <div className="card flex flex-col gap-5 rounded-2xl p-5 sm:flex-row sm:items-center sm:justify-between">
+        <div><p className="flex items-center gap-2 text-sm font-semibold text-primary"><Icon name="tune" className="text-lg text-secondary" />Sesuaikan agendamu</p><p className="mt-1 text-xs text-on-surface-variant">Pilih periode dan kelas untuk melihat jadwal yang relevan.</p></div>
         <ScheduleFilters
           months={months}
           selectedMonth={selectedMonth}
@@ -68,6 +64,7 @@ export function ScheduleView({
           onClassChange={onClassChange}
         />
       </div>
+      </PageHeading>
 
       <ScheduleControls
         activeEskuls={activeEskuls}
@@ -76,24 +73,25 @@ export function ScheduleView({
         totalCount={events.length}
       />
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-        <div className="lg:col-span-8">
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-12">
+        <div className="xl:col-span-8">
           <ScheduleTable events={filteredEvents} onClearFilters={onClearFilters} />
         </div>
 
-        <div className="flex flex-col gap-6 lg:col-span-4">
+        <div className="flex flex-col gap-6 xl:col-span-4">
           <NextActivityCard event={next} />
 
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1, duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-            className="card rounded-xl p-6"
+            className="card rounded-2xl p-6"
           >
-            <h3 className="font-heading text-lg font-semibold text-primary">Ringkasan Status</h3>
+            <p className="eyebrow">PROGRES KEGIATAN</p>
+            <h3 className="mt-1 font-heading text-xl font-bold text-primary">Ringkasan status</h3>
             <p className="mt-0.5 text-xs text-on-surface-variant">Berdasarkan filter saat ini</p>
 
-            <div className="mt-4 flex flex-col gap-3">
+            <div className="mt-6 flex flex-col gap-5">
               {total === 0 ? (
                 <p className="text-sm text-on-surface-variant">Tidak ada data.</p>
               ) : (
@@ -102,11 +100,11 @@ export function ScheduleView({
                   const count = bucketCounts.get(key) ?? 0;
                   const pct = total > 0 ? Math.round((count / total) * 100) : 0;
                   return (
-                    <div key={key} className="flex flex-col gap-1.5">
+                    <div key={key} className="rounded-xl bg-surface/70 p-3.5 flex flex-col gap-3">
                       <div className="flex items-center justify-between text-sm">
                         <span className="text-on-surface-variant">{meta.label}</span>
                         <span className="rounded bg-surface-container px-2 py-0.5 text-xs font-semibold text-on-surface">
-                          <AnimatedNumber value={count} />
+                          <AnimatedNumber value={count} /> · {pct}%
                         </span>
                       </div>
                       <div className="h-1.5 w-full overflow-hidden rounded-full bg-surface-container">
