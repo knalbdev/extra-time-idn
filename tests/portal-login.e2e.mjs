@@ -1,6 +1,7 @@
 // Run only against the local fixture described in docs/supabase-integration.md.
 import { chromium } from 'playwright-core';
 import assert from 'node:assert/strict';
+import fs from 'node:fs/promises';
 
 const browser = await chromium.launch({ executablePath: process.env.CHROME_PATH || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome', headless: true });
 try {
@@ -130,48 +131,54 @@ try {
   await login('Masuk admin', 'admin');
   await page.getByRole('button', { name: 'Reporting ekskul', exact: true }).click();
   await page.getByRole('button', { name: 'Generate laporan', exact: true }).click();
-  await page.getByRole('status').filter({ hasText: 'Laporan siap dibaca' }).waitFor();
+  await page.getByRole('status').filter({ hasText: 'Laporan berhasil disusun' }).waitFor();
   const report = page.locator('#coach-report');
   assert.ok((await report.textContent()).includes('Pernapasan dasar'));
   assert.equal((await report.textContent()).includes('Invalid Date'), false);
   const slideCount = await report.locator('.report-slide').count();
-  assert.ok(slideCount >= 7);
+  assert.ok(slideCount >= 5);
+  assert.equal(await report.locator(".report-detail-table").count(), 1);
+  assert.equal(await report.locator(".report-detail-table tbody tr").count(), 13);
+  assert.ok((await report.locator(".report-detail-table").textContent()).includes("Keterangan predikat"));
   assert.equal(await report.locator('.report-slide:visible').count(), 1);
   await page.getByRole('button', { name: 'Tutup pemberitahuan', exact: true }).click();
   await page.screenshot({ path: '/tmp/extra-tracker-report-cover.png', fullPage: true });
   await page.getByRole('button', { name: 'Berikutnya →', exact: true }).click();
   await page.screenshot({ path: '/tmp/extra-tracker-report-overview.png', fullPage: true });
-  const detailNotes = await report.locator('.report-detail-table tbody tr').evaluateAll(elements => elements.filter(row => row.querySelector('th').textContent.startsWith('Aini Rayhana Anwar')).map(row => row.querySelector('.report-note').textContent).join(''));
-  assert.equal(detailNotes, note);
+  const detailNotes = await report.locator('.report-appendix-text').allTextContents();
+  assert.equal(detailNotes.join(''), note);
   assert.ok((await report.locator('.report-logo').first().getAttribute('src')).includes('idn.png'));
   assert.equal((await report.textContent()).includes('Data Supabase'), false);
   const download = page.waitForEvent('download');
   await page.getByRole('button', { name: 'Unduh CSV', exact: true }).click();
   await download;
-  await page.getByRole('status').filter({ hasText: 'File CSV sudah disiapkan' }).waitFor();
-  await page.evaluate(() => { window.print = () => { window.__printCalled = true; }; });
-  await page.getByRole('button', { name: 'Cetak / Simpan PDF', exact: true }).click();
-  await page.waitForFunction(() => window.__printCalled === true);
-  assert.equal(await page.locator('dialog[open]').count(), 0);
+  await page.getByRole('status').filter({ hasText: 'File CSV telah disiapkan' }).waitFor();
+  await fs.writeFile('/tmp/extra-tracker-report-expected.json', JSON.stringify({names:await report.locator('.report-detail-table tbody th').allTextContents(),appendices:detailNotes,slides:slideCount}));
+  for (const [button, extension] of [['Unduh PDF','pdf'], ['Unduh PowerPoint (.pptx)','pptx']]) {
+    const file = page.waitForEvent('download');
+    await page.getByRole('button', { name: button, exact: true }).click();
+    const result = await file;
+    const target = `/tmp/extra-tracker-report.${extension}`;
+    await result.saveAs(target);
+    const bytes = await fs.readFile(target);
+    assert.ok(bytes.length > 10000, `${extension} must contain report data`);
+    assert.ok(result.suggestedFilename().endsWith(`.${extension}`));
+    await page.getByRole('status').filter({hasText: extension === 'pdf' ? 'Laporan PDF telah disiapkan' : 'Laporan PowerPoint telah disiapkan'}).waitFor();
+    assert.equal(await page.locator('dialog[open]').count(), 0);
+    assert.notEqual(await page.evaluate(()=>getComputedStyle(document.body).overflowY),'hidden');
+  }
+  // Check visible ink, not just the number of pages: the old selector priority
+  // left all report text hidden while still producing the right page count.
   await page.emulateMedia({ media: 'print' });
-  const clipping = await report.locator('.report-slide').evaluateAll(elements => elements.map(slide => {
-    const bottom = slide.querySelector('footer').getBoundingClientRect().top;
-    const lastContent = slide.querySelector('tbody tr:last-child') || slide.querySelector('.report-reading-guide') || slide.querySelector('.report-cover-stats');
-    return { slide: slide.dataset.slide, overlapsFooter: lastContent && lastContent.getBoundingClientRect().bottom > bottom, width: slide.getBoundingClientRect().width, height: slide.getBoundingClientRect().height };
-  }));
-  assert.ok(clipping.every(slide => !slide.overlapsFooter && slide.width > slide.height), JSON.stringify(clipping));
-  const pdf = await page.pdf({ path: '/tmp/extra-tracker-report.pdf', preferCSSPageSize: true, printBackground: true });
-  const pdfSource = pdf.toString('latin1');
-  const pageCount = [...pdfSource.matchAll(/\/Type\s*\/Page\b/g)].length;
-  assert.equal(pageCount, slideCount, 'Every slide must fit exactly one PDF page');
-  const boxes = [...pdfSource.matchAll(/\/MediaBox\s*\[\s*0\s+0\s+([\d.]+)\s+([\d.]+)/g)];
-  assert.ok(boxes.length && boxes.every(match => Number(match[1]) > Number(match[2])));
+  assert.equal(await report.locator('.report-slide h2').first().evaluate(el=>getComputedStyle(el).visibility),'visible');
+  assert.equal(await report.locator('.report-detail-table tbody tr').first().evaluate(el=>getComputedStyle(el).visibility),'visible');
+  await page.pdf({path:'/tmp/extra-tracker-browser-print.pdf',preferCSSPageSize:true,printBackground:true});
   await page.emulateMedia({ media: 'screen' });
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.getByLabel('Pilih slide laporan', { exact: true }).selectOption('4');
+  await page.getByLabel('Pilih slide laporan', { exact: true }).selectOption('3');
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
   await page.screenshot({ path: '/tmp/extra-tracker-report-mobile.png', fullPage: true });
-  console.log(`PASS report cover/logo, shared context, complete notes, CSV, responsive navigation, ${pageCount} landscape PDF pages without clipping`);
+  console.log(`PASS report cover/logo, shared context, complete notes, CSV, responsive navigation, ${slideCount} slides, direct PDF and editable PowerPoint downloads`);
 
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.getByRole('button', { name: 'Manajemen coach', exact: true }).click();

@@ -65,9 +65,9 @@ Next.js diperbarui ke 16.4.2 untuk advisori keamanan runtime. Audit runtime (`np
 - Login, simpan pertemuan/nilai, refresh, ubah penugasan, dan persiapan laporan/ekspor menggunakan dialog loading di tengah layar. Dialog memblokir interaksi dan Escape selama proses; hasil muncul sebagai notifikasi tetap di bawah layar.
 - Konfirmasi keluar akun dan meninggalkan draft memakai dialog UI dengan fokus awal di Batal. Peringatan menutup tab/reload browser tetap ditangani browser melalui beforeunload.
 - Daftar siswi menampilkan kehadiran, predikat, dan catatan. Hadir hijau, izin kuning, sakit oranye, alpa merah. Tampilan ponsel memakai kartu.
-- Laporan admin berupa presentasi dengan navigasi slide, cover berlogo IDN, ringkasan, rekap per kelas, dan tabel penilaian per pertemuan. Materi/konteks ditulis pada header pertemuan, standar A–E di ringkasan. Catatan panjang berlanjut ke baris/slide berikutnya tanpa dipotong.
-- Cetak/Simpan PDF mencetak semua slide dalam A4 landscape, satu slide per halaman. Ini PDF bergaya presentasi; belum menyediakan file PowerPoint. Ekspor CSV tetap tersedia.
-- Pengujian browser menggunakan data uji lokal, termasuk catatan 2.000 karakter, pemulihan setelah refresh gagal, warna absensi, dialog kustom, layout ponsel, serta jumlah/orientasi halaman PDF dan batas isi terhadap footer.
+- Laporan admin memakai bahasa formal dengan cover berlogo IDN, ringkasan predikat A–E, rekap per kelas, dan satu slide penilaian yang memuat seluruh siswi per kelas/pertemuan. Tabel berisi kehadiran, predikat, keterangan predikat, serta catatan singkat. Catatan panjang dan keterangan khusus dirujuk ke lampiran L1, L2, dan seterusnya; isinya tetap lengkap. Standar rubrik khusus tetap dipertahankan maknanya.
+- Unduh PDF membuat file langsung tanpa membuka dialog cetak browser. Unduh PowerPoint (.pptx) membuat presentasi 16:9 dengan teks dan bentuk yang dapat diedit untuk digabungkan ke laporan lain. Keduanya memakai data snapshot, isi, dan pengukuran tata letak yang sama. CSV tetap tersedia; nilai tersimpan tidak berubah.
+- Pengujian browser memakai data uji lokal, termasuk catatan 2.000 karakter, pemulihan refresh gagal, warna absensi, dialog, layout ponsel, dan unduhan PDF/PPTX. Tes model memverifikasi seluruh 16 siswi pada satu slide, keterangan predikat, rujukan lampiran, dan batas tata letak ekspor. Pemeriksaan manual file hasil unduhan memverifikasi teks PDF tidak kosong serta isi PowerPoint tetap dapat diedit.
 
 ## Perbaikan scroll dan navigasi workspace
 
@@ -78,3 +78,11 @@ Semua dialog portal kini memakai `src/lib/use-modal-dialog.ts`: kepemilikan scro
 Judul kiri atas workspace berupa identitas, tanpa tautan keluar. Beranda `/` memeriksa akun aktif di server dan mengarahkan coach/admin yang masih masuk ke `/coach`, termasuk akses langsung atau Back. Login/logout juga membatalkan cache halaman beranda. Pengguna yang belum masuk tetap dapat membuka landing page/dashboard publik. Proxy memperbarui sesi pada beranda dan portal; tidak ada perubahan schema SQL.
 
 Regresi `node tests/portal-navigation.e2e.mjs` memakai fixture lokal yang sama dengan tes login. Jalankan pada fixture baru SEBELUM `tests/portal-login.e2e.mjs` (tes login menonaktifkan coach renang sebagai bagian dari pengujiannya). Cakupan desktop 1280px dan ponsel 390px: masuk dari dashboard, buka/tutup dialog berulang, login dengan dua modal bertumpuk, scroll menggunakan roda mouse, refresh, Batal/keluar, Back/akses langsung beranda, dan kembali ke portal tanpa reload. Tes login juga memeriksa bahwa login tidak meninggalkan scroll lock.
+
+## Implementasi ekspor laporan
+
+`src/lib/report-export.ts` memuat jsPDF dan PptxGenJS hanya saat unduhan diminta. PDF berisi teks langsung dan PPTX berisi text box/bentuk yang dapat diedit, bukan gambar tangkapan layar slide. Logo IDN dimuat dari `/idn.png`; data laporan diproses pada browser admin tanpa dikirim ke layanan ekspor lain.
+
+PDF kosong sebelumnya disebabkan prioritas selector `body:has(#coach-report) *` yang mengalahkan selector penampil isi. Selector penampil cetak kini diperbaiki. Tombol utama PDF menggunakan generator file langsung agar hasil tidak bergantung pada status modal atau aturan cetak browser.
+
+PptxGenJS menyertakan import Node khusus ekspor filesystem di samping jalur browser. Konfigurasi client Webpack/Turbopack mengarahkannya ke stub browser; kode server tetap memakai modul Node asli. Dependency transitif `image-size` diberi override ke versi yang sudah diperbaiki. Audit runtime bersih setelah instalasi; audit dev mengikuti catatan di atas. `npm run build` (Turbopack) dan build Webpack sudah diverifikasi.

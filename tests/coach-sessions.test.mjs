@@ -81,24 +81,46 @@ test('server input validation strips forged actor fields and rejects invalid att
   assert.equal(recordSchema.safeParse({ ...base, attendance: 'sakit', grade: null }).success, true);
 });
 
-test('slide reports group meeting context and preserve every character of long notes', () => {
-  const { buildReportSlides, splitReportNote } = load('src/lib/report-slides.ts');
+test('one meeting slide contains the whole class; full long notes remain in referenced appendices', () => {
+  const { buildReportSlides, splitReportNote, gradeDescription } = load('src/lib/report-slides.ts');
   const longNote = ('Arahan latihan berikutnya: fokus pernapasan.\n\n' + 'Kemajuan '.repeat(25)).repeat(7).slice(0, 2000);
-  const segments = splitReportNote(longNote);
-  assert.ok(segments.length > 1);
-  assert.equal(segments.join(''), longNote);
+  assert.equal(splitReportNote(longNote).join(''), longNote);
   const records = { 'm1|7a-01': { ...record, notes: longNote } };
   const slides = buildReportSlides([meeting], records, students);
   assert.deepEqual(slides.slice(0, 2).map(s => s.kind), ['cover', 'overview']);
   const summary = slides.filter(s => s.kind === 'summary');
-  assert.equal(summary.flatMap(s => s.rows).length, 13);
-  assert.ok(summary.every(s => s.className === '7A' && s.rows.length <= 10));
+  assert.equal(summary.length, 1);
+  assert.equal(summary[0].rows.length, 13);
   const detail = slides.filter(s => s.kind === 'meeting');
-  assert.ok(detail.length > 2);
-  assert.ok(detail.every(s => s.meeting.id === 'm1' && s.rows.length <= 7));
-  const firstStudent = detail.flatMap(s => s.rows).filter(r => r.student.id === '7a-01');
-  assert.equal(firstStudent.filter(r => !r.continuation).length, 1);
-  assert.equal(firstStudent.map(r => r.notes).join(''), longNote);
-  assert.equal(detail.flatMap(s => s.rows).filter(r => !r.continuation).length, 13);
-  assert.ok(detail.flatMap(s => s.rows).every(r => r.student.className === '7A'));
+  assert.equal(detail.length, 1);
+  assert.equal(detail[0].rows.length, 13);
+  assert.equal(new Set(detail[0].rows.map(r => r.student.id)).size, 13);
+  assert.ok(detail[0].rows.every(r => r.student.className === '7A'));
+  assert.equal(detail[0].rows[0].description, 'Mandiri', 'Custom rubric descriptions must retain their meaning');
+  assert.ok(detail[0].rows[0].notes.includes('(L1)'));
+  const appendix = slides.filter(s => s.kind === 'notes' && s.reference === 'L1');
+  assert.equal(appendix.map(s => s.text).join(''), longNote);
+  assert.equal(gradeDescription(meeting, {...record, attendance:'sakit', grades:{}}), 'Tidak dinilai karena tidak hadir.');
+});
+
+test('export layout fits all 16 students on one editable meeting slide with grade descriptions', () => {
+  const { createExportPages } = load('src/lib/report-export.ts');
+  const { jsPDF } = loadExternal('jspdf');
+  const { GENERAL_DESCRIPTORS } = rawModel;
+  const roster = students.filter(s => s.className === '11 DKV');
+  assert.equal(roster.length, 16);
+  const m = { ...meeting, className:'11 DKV', title:'Latihan pernapasan dan penguasaan keterampilan dasar '.repeat(2).slice(0,120), skill:'Keterampilan inti yang menjadi dasar pembelajaran dan pengembangan kemampuan siswi '.repeat(2).slice(0,160), rubric:[{id:'skill',title:'Pernapasan',descriptors:GENERAL_DESCRIPTORS}] };
+  const records = Object.fromEntries(roster.map(s => [rawModel.recordKey(m.id,s.id), {...record, grades:{skill:'E'}, notes:'Latihan dilakukan secara bertahap dengan pendampingan rutin.'}]));
+  const report = {meetings:[m], records, generatedAt:'2026-10-18T12:00:00Z'};
+  const pages = createExportPages(report,roster,'Renang',new jsPDF({unit:'pt'}));
+  const detail = pages.filter(p => p.kind === 'meeting');
+  assert.equal(detail.length, 1);
+  assert.ok(detail[0].tableBottom <= 501);
+  assert.ok(detail[0].tableFontSize >= 7.4);
+  const text = detail[0].items.filter(i => i.kind === 'text').map(i => i.text.replaceAll('\n',' '));
+  for (const student of roster) assert.ok(text.includes(student.name), student.name);
+  assert.ok(text.some(value => value.includes('pendampingan intensif')));
+  for (const page of pages) for (const item of page.items) {
+    assert.ok(item.x >= 0 && item.y >= 0 && item.x+item.w <= 961 && item.y+item.h <= 541, JSON.stringify(item));
+  }
 });

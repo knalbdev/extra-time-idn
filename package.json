@@ -12,8 +12,10 @@
     "@supabase/ssr": "^0.12.7",
     "@supabase/supabase-js": "^2.118.0",
     "framer-motion": "^13.1.1",
+    "jspdf": "^4.2.1",
     "next": "^16.4.2",
     "papaparse": "^5.6.0",
+    "pptxgenjs": "4.0.0",
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "server-only": "^0.0.1",
@@ -30,5 +32,10 @@
     "playwright-core": "^1.62.1",
     "tailwindcss": "^4",
     "typescript": "^5"
+  },
+  "overrides": {
+    "pptxgenjs": {
+      "image-size": "^2.0.3"
+    }
   }
 }

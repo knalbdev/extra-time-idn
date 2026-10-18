@@ -1,56 +1,87 @@
 import type { Student } from "./students";
-import { Meeting, MeetingRecord, recordKey, reportRows, SessionData } from "./coach-sessions";
+import { Grade } from "./assessments";
+import { GENERAL_DESCRIPTORS, Meeting, MeetingRecord, recordKey, reportRows, SessionData } from "./coach-sessions";
 
+export const REPORT_DESCRIPTORS: Record<Grade, string> = {
+  A: "Menguasai keterampilan secara mandiri, tepat, dan konsisten.",
+  B: "Melaksanakan keterampilan dengan baik dan memerlukan sedikit arahan.",
+  C: "Memahami dasar keterampilan, namun masih memerlukan latihan dan arahan.",
+  D: "Menguasai sebagian dasar keterampilan dan memerlukan bimbingan rutin.",
+  E: "Belum menguasai dasar keterampilan; memerlukan latihan bertahap dan pendampingan intensif.",
+};
+export type ReportSnapshot = { meetings: Meeting[]; records: SessionData["records"]; generatedAt: string };
 export type SummaryRow = ReturnType<typeof reportRows>[number];
-export type DetailRow = { student: Student; record?: MeetingRecord; notes: string; continuation: boolean };
+export type DetailRow = { student: Student; record?: MeetingRecord; notes: string; grade: string; description: string };
 export type ReportSlide =
   | { kind: "cover" }
   | { kind: "overview" }
   | { kind: "summary"; className: string; rows: SummaryRow[] }
-  | { kind: "meeting"; meeting: Meeting; rows: DetailRow[]; part: number };
+  | { kind: "meeting"; meeting: Meeting; rows: DetailRow[] }
+  | { kind: "notes"; meeting: Meeting; student: Student; topic: string; reference: string; text: string; part: number; parts: number };
 
-// Keep every character of long notes, including line breaks. Extra note segments
-// continue on subsequent rows/slides instead of clipping the coach's feedback.
+export function gradeDescription(meeting: Meeting, record?: MeetingRecord): string {
+  if (!record) return "Penilaian belum dicatat.";
+  if (record.attendance !== "hadir") return "Tidak dinilai karena tidak hadir.";
+  return meeting.rubric.map(criterion => {
+    const grade = record.grades[criterion.id];
+    if (!grade) return "Predikat belum dicatat.";
+    const saved = criterion.descriptors[grade];
+    // Reword only the standard rubric; preserve the meaning of custom rubrics.
+    const description = saved === GENERAL_DESCRIPTORS[grade] ? REPORT_DESCRIPTORS[grade] : saved;
+    return meeting.rubric.length === 1 ? description : `${criterion.title}: ${description}`;
+  }).join("\n");
+}
+
+// Split appendix text at word boundaries where possible, without dropping even
+// whitespace. Frequent explicit line breaks also consume the slide's line budget.
 export function splitReportNote(text: string): string[] {
   if (!text) return [""];
   const parts: string[] = [];
-  let part = "", column = 0, lines = 1;
-  for (const char of Array.from(text)) {
-    if (part && (part.length >= 180 || (lines >= 4 && (char === "\n" || column >= 48)))) {
-      parts.push(part); part = ""; column = 0; lines = 1;
+  let rest = text;
+  while (rest.length) {
+    let end = 0, column = 0, lines = 1;
+    for (const char of Array.from(rest)) {
+      if (end >= 900 || (lines >= 12 && (char === "\n" || column >= 100))) break;
+      end += char.length;
+      if (char === "\n" || column >= 100) { lines++; column = 0; } else column++;
     }
-    part += char;
-    if (char === "\n" || column >= 48) { lines++; column = 0; }
-    else column++;
+    if (end < rest.length) {
+      const boundary = Math.max(rest.lastIndexOf(" ", end - 1), rest.lastIndexOf("\n", end - 1));
+      if (boundary > end * .6) end = boundary + 1;
+    }
+    parts.push(rest.slice(0, end)); rest = rest.slice(end);
   }
-  if (part) parts.push(part);
   return parts;
 }
 
 export function buildReportSlides(meetings: Meeting[], records: SessionData["records"], students: Student[]): ReportSlide[] {
   const slides: ReportSlide[] = [{ kind: "cover" }, { kind: "overview" }];
   const rows = reportRows(meetings, records, students);
-  const classes = [...new Set(meetings.map(m => m.className))];
-  for (const className of classes) {
-    const group = rows.filter(row => row.student.className === className);
-    for (let i = 0; i < group.length; i += 10) slides.push({ kind: "summary", className, rows: group.slice(i, i + 10) });
+  for (const className of new Set(meetings.map(m => m.className))) {
+    slides.push({ kind: "summary", className, rows: rows.filter(row => row.student.className === className) });
   }
+  const appendices: ReportSlide[] = [];
+  let referenceNumber = 0;
   for (const meeting of meetings) {
-    let page: DetailRow[] = [], used = 0, part = 1;
-    for (const student of students.filter(s => s.className === meeting.className)) {
+    const details = students.filter(s => s.className === meeting.className).map(student => {
       const record = records[recordKey(meeting.id, student.id)];
-      const segments = splitReportNote(record?.notes ?? "");
-      for (let i = 0; i < segments.length; i++) {
-        const notes = segments[i];
-        const noteLines = notes.split("\n").reduce((sum, line) => sum + Math.max(1, Math.ceil(line.length / 48)), 0);
-        const weight = Math.max(2, noteLines + 1, Math.ceil(student.name.length / 25) + 1);
-        if (page.length && (used + weight > 16 || page.length >= 6)) {
-          slides.push({ kind: "meeting", meeting, rows: page, part: part++ }); page = []; used = 0;
-        }
-        page.push({ student, record, notes, continuation: i > 0 }); used += weight;
-      }
-    }
-    if (page.length) slides.push({ kind: "meeting", meeting, rows: page, part });
+      const shorten = (text: string, limit: number, topic: string) => {
+        const compact = text.replace(/\s+/g, " ").trim();
+        if (compact.length <= limit && text.split("\n").length <= 2) return compact;
+        const reference = `L${++referenceNumber}`;
+        const segments = splitReportNote(text);
+        segments.forEach((segment, index) => appendices.push({ kind: "notes", meeting, student, topic, reference, text: segment, part: index + 1, parts: segments.length }));
+        const excerpt = compact.slice(0, limit - 15).replace(/\s+\S*$/, "");
+        return `${excerpt}… (${reference})`;
+      };
+      return {
+        student, record,
+        grade: record?.attendance === "hadir" ? meeting.rubric.map(c => record.grades[c.id] ?? "—").join(" / ") : "—",
+        description: shorten(gradeDescription(meeting, record), 135, "Keterangan predikat"),
+        notes: shorten(record?.notes ?? "", 75, "Catatan coach"),
+      };
+    });
+    slides.push({ kind: "meeting", meeting, rows: details });
   }
-  return slides;
+  return [...slides, ...appendices];
 }
