@@ -184,7 +184,6 @@ export function LandingPage({
       </main>
 
       <div className="mx-auto mb-12 flex max-w-5xl flex-wrap items-center justify-between gap-4 px-6"><div><p className="text-sm font-semibold text-primary">Ruang untuk para pembimbing</p><p className="mt-1 text-xs text-on-surface-variant">Masuk untuk mencatat materi, absensi, dan penilaian.</p></div><Link href="/coach" className="inline-flex items-center gap-2 rounded-xl border border-outline-variant bg-white px-5 py-3 text-sm font-semibold text-primary">Portal Coach<Icon name="arrow_forward" className="text-lg" /></Link></div>
-      <div className="mx-auto mb-12 max-w-5xl px-6"><Link href="/pendamping" className="card flex flex-wrap items-center justify-between gap-4 rounded-2xl p-5 transition hover:border-blue-200"><div><p className="text-sm font-semibold text-primary">Portal Pendamping Ekskul</p><p className="mt-1 text-xs text-on-surface-variant">Dokumentasi kegiatan, pendamping, kelas, dan ekskul.</p></div><span className="rounded-full bg-amber-50 px-3 py-2 text-[10px] font-semibold text-amber-800">Dalam pengembangan</span></Link></div>
       <footer className="border-t border-outline-variant/50 bg-white/60">
         <div className="mx-auto flex max-w-5xl flex-col items-center gap-2 px-6 py-8 text-center">
           <p className="text-xs text-on-surface-variant/70">&copy; IDN Akhwat 2026</p>
