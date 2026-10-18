@@ -13,6 +13,8 @@ export interface SessionRecap {
   rows: { eskul: EskulKey; label: string; count: number; days: number; lastDate: string | null }[];
 }
 export const RECAP_COUNT_NOTE = "Satu jadwal dihitung sebagai satu sesi, meskipun melibatkan beberapa kelas. Sesi pada jam yang berbeda dihitung terpisah.";
+export const RECAP_LATEST_LABEL = "Pelaksanaan terbaru";
+export const RECAP_LATEST_NOTE = "Pelaksanaan terbaru menunjukkan tanggal sesi paling baru yang sudah terlaksana dalam periode yang dipilih. Tanda — berarti belum ada sesi terlaksana pada periode tersebut.";
 export function isCompletedSheetSession(event: EskulEvent) {
   return event.status.trim().replace(/\s+/g, " ").toLocaleLowerCase("id-ID") === "sudah terlaksana";
 }

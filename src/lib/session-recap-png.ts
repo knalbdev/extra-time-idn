@@ -1,5 +1,5 @@
 import { ESKUL_META } from "./constants";
-import { RECAP_COLORS, RECAP_COUNT_NOTE, recapDate, recapUpdated, SessionRecap } from "./session-recap";
+import { RECAP_COLORS, RECAP_COUNT_NOTE, RECAP_LATEST_LABEL, RECAP_LATEST_NOTE, recapDate, recapUpdated, SessionRecap } from "./session-recap";
 
 export async function downloadSessionRecapPng(recap: SessionRecap) {
   const canvas = document.createElement("canvas");
@@ -43,7 +43,8 @@ export async function downloadSessionRecapPng(recap: SessionRecap) {
   const detailTop=summaryBottom+44;
   const detailsBottom=recap.total?detailTop+136+detailRows.reduce((sum,row)=>sum+row.height,0):summaryBottom+84;
   const footerTop=detailsBottom+40;
-  const noteLines=wrap(RECAP_COUNT_NOTE,1792);
+  const noteText=`${RECAP_COUNT_NOTE}\n${RECAP_LATEST_NOTE}`;
+  const noteLines=wrap(noteText,1792);
   // Keep the whole selected period in one readable image, including every
   // class and time. Never shrink rows or truncate the last sessions to fit 16:9.
   canvas.height=Math.max(1080,footerTop+126+noteLines.length*31);
@@ -63,7 +64,7 @@ export async function downloadSessionRecapPng(recap: SessionRecap) {
   stats.forEach(([value,label],i)=>{const x=64+i*608;rect(x,300,576,126,"#ffffff",18);text(label,x+26,320,22,"#60758c");text(value,x+26,359,44,"#18314e",true);});
   rect(64,464,1792,60,"#e8eff7",12);
   const columns=[92,750,1160,1470];
-  ["Ekstrakurikuler","Sesi terlaksana","Hari pelaksanaan","Tanggal terakhir"].forEach((value,i)=>text(value,columns[i],483,22,"#486580",true));
+  ["Ekstrakurikuler","Sesi terlaksana","Hari pelaksanaan",RECAP_LATEST_LABEL].forEach((value,i)=>text(value,columns[i],483,22,"#486580",true));
   const maximum=Math.max(1,...recap.rows.map(row=>row.count));
   recap.rows.forEach((row,i)=>{
     const y=524+i*68;
@@ -90,7 +91,7 @@ export async function downloadSessionRecapPng(recap: SessionRecap) {
     text('Tidak ada sesi berstatus “Sudah Terlaksana” pada rentang ini.',64,summaryBottom+30,24,"#60758c");
   }
   text('Sumber: spreadsheet jadwal · Status: "Sudah Terlaksana"',64,footerTop+18,23,"#18314e",true);
-  paragraph(RECAP_COUNT_NOTE,64,footerTop+62,1792);
+  paragraph(noteText,64,footerTop+62,1792);
   text(`Data diperbarui ${recapUpdated(recap.fetchedAt)}`,64,canvas.height-44,20,"#60758c");
   text("IDN Akhwat",1675,canvas.height-44,20,"#60758c",true);
   const blob=await new Promise<Blob>((resolve,reject)=>canvas.toBlob(result=>result?resolve(result):reject(new Error("Gambar rekap tidak dapat disimpan.")),"image/png"));
