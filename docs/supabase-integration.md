@@ -86,3 +86,13 @@ Regresi `node tests/portal-navigation.e2e.mjs` memakai fixture lokal yang sama d
 PDF kosong sebelumnya disebabkan prioritas selector `body:has(#coach-report) *` yang mengalahkan selector penampil isi. Selector penampil cetak kini diperbaiki. Tombol utama PDF menggunakan generator file langsung agar hasil tidak bergantung pada status modal atau aturan cetak browser.
 
 PptxGenJS menyertakan import Node khusus ekspor filesystem di samping jalur browser. Konfigurasi client Webpack/Turbopack mengarahkannya ke stub browser; kode server tetap memakai modul Node asli. Dependency transitif `image-size` diberi override ke versi yang sudah diperbaiki. Audit runtime bersih setelah instalasi; audit dev mengikuti catatan di atas. `npm run build` (Turbopack) dan build Webpack sudah diverifikasi.
+
+## Rekap sesi terlaksana dari spreadsheet (admin)
+
+Menu admin **Rekap sesi** memakai `getAllEvents()` untuk membaca lima tab spreadsheet jadwal yang juga digunakan dashboard. Data pertemuan/penilaian Supabase tidak menjadi sumber perhitungan ini. Pilih tanggal mulai/akhir (keduanya inklusif), pilih semua/satu ekstrakurikuler, lalu **Tampilkan rekap**. Setiap permintaan memuat ulang spreadsheet; tidak memakai cache jadwal browser.
+
+Hanya nilai status **Sudah Terlaksana** yang dihitung, dengan toleransi huruf besar/kecil dan spasi. Status lain, termasuk Belum Terlaksana dan Sudah dibatalkan, tidak dihitung meskipun normalisasi status dashboard dapat berbeda. Satu jadwal dengan beberapa kelas tetap satu sesi. Dua slot Panahan pada hari yang sama tetap dua sesi; jumlah hari dihitung berdasarkan tanggal unik. Rincian jadwal yang dihitung dapat dibuka untuk pengecekan.
+
+Unduhan **rekap PNG** berukuran 1920 × 1080 dan mencantumkan logo IDN, rentang, filter ekstrakurikuler, jumlah sesi/hari, rekap per ekstrakurikuler, sumber, aturan hitung, dan waktu pembaruan WIB. Mengubah filter menghapus hasil sebelumnya agar PNG tidak memakai rentang lama. Jika salah satu tab spreadsheet gagal dimuat, rekap tidak ditampilkan sebagai hasil parsial; admin dapat mencoba kembali. Rekap nol tetap ditampilkan secara eksplisit.
+
+`tests/session-recap.e2e.mjs` menguji CSV spreadsheet dengan dua slot Panahan dan kelas gabungan, filter tanggal/ekskul, angka nol, kegagalan koneksi, ukuran PNG, tampilan ponsel, serta menu yang hanya tersedia pada admin. Tes memakai fixture Supabase untuk akun dan mock CSV; tidak mengubah spreadsheet atau data produksi. Jalankan sebelum tes login yang menonaktifkan coach uji. Tidak ada perubahan schema atau credential tambahan.

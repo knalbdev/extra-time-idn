@@ -124,3 +124,23 @@ test('export layout fits all 16 students on one editable meeting slide with grad
     assert.ok(item.x >= 0 && item.y >= 0 && item.x+item.w <= 961 && item.y+item.h <= 541, JSON.stringify(item));
   }
 });
+
+test('spreadsheet recap uses exact completed status and inclusive dates, counting sessions rather than classes', () => {
+  const {buildSessionRecap,validRecapRange}=load('src/lib/session-recap.ts');
+  const event={id:'one',eskul:'renang',eskulLabel:'Renang',date:'2026-10-01',dateLabel:'1 Okt 2026',time:'10.00',classes:['7A','7B'],weekNo:'1',status:'Sudah Terlaksana',statusNormalized:'selesai'};
+  const events=[event,{...event,id:'end',date:'2026-10-31'}, {...event,id:'early',date:'2026-09-30'}, {...event,id:'late',date:'2026-11-01'}, {...event,id:'pending',status:'Belum Terlaksana',statusNormalized:'belum'}, {...event,id:'cancel',status:'Sudah dibatalkan'}, {...event,id:'arrow1',eskul:'panahan',status:'  SUDAH  Terlaksana  '}, {...event,id:'arrow2',eskul:'panahan',time:'13.00'}];
+  const recap=buildSessionRecap(events,'2026-10-01','2026-10-31','all','2026-10-18T09:00:00Z');
+  assert.equal(recap.total,4);
+  assert.equal(recap.days,2);
+  assert.equal(recap.activeEskuls,2);
+  assert.equal(recap.rows.find(row=>row.eskul==='renang').count,2);
+  assert.equal(recap.rows.find(row=>row.eskul==='panahan').count,2);
+  assert.equal(recap.rows.find(row=>row.eskul==='pramuka').count,0);
+  assert.equal(recap.rows.find(row=>row.eskul==='renang').lastDate,'2026-10-31');
+  assert.equal(buildSessionRecap(events,'2026-10-01','2026-10-01','panahan','now').total,2);
+  assert.equal(buildSessionRecap(events,'2026-12-01','2026-12-31','all','now').total,0);
+  assert.equal(validRecapRange('2026-10-31','2026-10-01'),false);
+  assert.equal(validRecapRange('2026-02-30','2026-03-01'),false);
+  assert.equal(validRecapRange('','2026-10-01'),false);
+  assert.throws(()=>buildSessionRecap(events,'2026-10-31','2026-10-01','all','now'));
+});

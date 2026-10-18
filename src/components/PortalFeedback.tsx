@@ -63,10 +63,10 @@ export function PortalFeedbackProvider({ children }: { children: ReactNode }) {
   }
   return <Context.Provider value={{ busy, run, notify, ask }}>
     {children}
-    {notice && !busy && <div className={`print-hide fixed inset-x-3 bottom-4 z-50 mx-auto flex max-w-xl items-start gap-3 rounded-2xl border p-4 shadow-xl sm:inset-x-6 sm:bottom-6 ${notice.kind === "error" ? "border-rose-200 bg-rose-50 text-rose-900" : "border-emerald-200 bg-emerald-50 text-emerald-950"}`}>
+    {notice && !busy && <div className={`print-hide pointer-events-none fixed inset-x-3 bottom-4 z-50 mx-auto flex max-w-xl items-start gap-3 rounded-2xl border p-4 shadow-xl sm:inset-x-6 sm:bottom-6 ${notice.kind === "error" ? "border-rose-200 bg-rose-50 text-rose-900" : "border-emerald-200 bg-emerald-50 text-emerald-950"}`}>
       <span aria-hidden="true" className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white font-bold">{notice.kind === "error" ? "!" : "✓"}</span>
       <p role={notice.kind === "error" ? "alert" : "status"} className="min-w-0 flex-1 break-words text-sm leading-relaxed">{notice.text}</p>
-      <button type="button" aria-label="Tutup pemberitahuan" onClick={() => setNotice(null)} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full hover:bg-white">×</button>
+      <button type="button" aria-label="Tutup pemberitahuan" onClick={() => setNotice(null)} className="pointer-events-auto flex h-8 w-8 shrink-0 items-center justify-center rounded-full hover:bg-white">×</button>
     </div>}
     {question && <Modal label="portal-confirm-title" description="portal-confirm-description" onCancel={() => answer(false)}>
       <div aria-hidden="true" className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-50 text-2xl text-amber-700">↗</div>
