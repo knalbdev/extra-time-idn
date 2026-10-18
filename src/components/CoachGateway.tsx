@@ -33,7 +33,7 @@ function Gateway({ enabled, error }: { enabled: boolean; error?: string }) {
     });
   }
   function open(value: EskulKey | "admin") { setTarget(value); setMessage(""); setUsername(""); setPassword(""); }
-  return <main className="mx-auto min-h-screen max-w-7xl space-y-6 px-4 py-7 text-primary sm:px-8"><Link href="/?view=dashboard" className="text-xs font-semibold text-secondary">← Kembali ke dashboard</Link>
+  return <main className="mx-auto min-h-screen max-w-7xl space-y-6 px-4 py-7 text-primary sm:px-8"><Link href="/?view=dashboard" className="inline-flex rounded-xl border border-outline-variant bg-white px-4 py-3 text-xs font-semibold">← Kembali ke dashboard</Link>
     {(!enabled || error) && <p role="alert" className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm leading-relaxed text-amber-900">{error ?? "Portal belum siap digunakan. Silakan hubungi admin untuk mengaktifkan akses."}</p>}
     <section className="dashboard-hero relative isolate overflow-hidden rounded-[2rem] p-7 text-white sm:p-10"><div aria-hidden className="hero-orbit" /><p className="text-[10px] font-semibold tracking-[.2em] text-blue-200">IDN AKHWAT / COACH PORTAL</p><h1 className="mt-4 font-heading text-3xl font-bold leading-tight sm:text-4xl">Ruang melatih.<br />Tempat potensi bertumbuh.</h1><p className="mt-4 max-w-lg text-sm leading-relaxed text-blue-100">Pilih ruang coach dan masuk menggunakan akun yang disediakan admin.</p></section>
     <div><p className="eyebrow">RUANG EKSTRAKURIKULER</p><h2 className="mt-2 font-heading text-2xl font-bold">Pilih ruang coach</h2></div>
