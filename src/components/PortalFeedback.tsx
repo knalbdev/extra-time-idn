@@ -1,6 +1,7 @@
 "use client";
 
-import { createContext, ReactNode, useContext, useEffect, useRef, useState, useTransition } from "react";
+import { createContext, ReactNode, useContext, useRef, useState, useTransition } from "react";
+import { useModalDialog } from "@/lib/use-modal-dialog";
 
 type Notice = { text: string; kind: "success" | "error" };
 type Question = { title: string; description: string; confirmLabel: string };
@@ -20,13 +21,7 @@ export function usePortalFeedback() {
 
 function Modal({ children, label, description, onCancel }: { children: ReactNode; label: string; description?: string; onCancel: () => void }) {
   const ref = useRef<HTMLDialogElement>(null);
-  useEffect(() => {
-    const dialog = ref.current;
-    const overflow = document.body.style.overflow;
-    dialog?.showModal();
-    document.body.style.overflow = "hidden";
-    return () => { dialog?.close(); document.body.style.overflow = overflow; };
-  }, []);
+  useModalDialog(ref);
   return <dialog ref={ref} tabIndex={-1} aria-labelledby={label} aria-describedby={description} onCancel={event => { event.preventDefault(); onCancel(); }} className="portal-modal print-hide fixed inset-0 m-auto max-h-[90dvh] w-[calc(100%_-_2rem)] max-w-md overflow-y-auto rounded-3xl border-0 bg-white p-6 text-primary shadow-2xl backdrop:bg-slate-950/50 backdrop:backdrop-blur-sm sm:p-8">{children}</dialog>;
 }
 

@@ -42,6 +42,7 @@ export async function signInAction(input: unknown): Promise<ActionResult> {
       allowed = !scope.error && Boolean(scope.data?.length);
     }
     if (!allowed) { await client.auth.signOut({ scope: "local" }); return { ok: false, error: denied }; }
+    revalidatePath("/");
     revalidatePath("/coach");
     return { ok: true, data: undefined };
   } catch { return { ok: false, error: failed }; }
@@ -51,6 +52,7 @@ export async function signOutAction(): Promise<ActionResult> {
     const client = await sessionClient();
     const { error } = await client.auth.signOut({ scope: "local" });
     if (error) return { ok: false, error: "Belum berhasil keluar dari akun. Silakan coba lagi." };
+    revalidatePath("/");
     revalidatePath("/coach");
     return { ok: true, data: undefined };
   } catch { return { ok: false, error: failed }; }

@@ -26,6 +26,10 @@ try {
     await page.getByRole('button', { name: 'Masuk workspace', exact: true }).click();
     await loading('Sedang memeriksa akun…').waitFor();
     await page.getByRole('button', { name: 'Keluar akun', exact: true }).waitFor();
+    const unlocked = await page.evaluate(() => ({ body: getComputedStyle(document.body).overflowY, html: getComputedStyle(document.documentElement).overflowY, dialogs: document.querySelectorAll('dialog[open]').length }));
+    assert.equal(unlocked.dialogs, 0, 'Login must remove both modal dialogs');
+    assert.notEqual(unlocked.body, 'hidden', `Login left page scrolling locked: ${JSON.stringify(unlocked)}`);
+    assert.notEqual(unlocked.html, 'hidden');
   }
   async function logout() {
     await page.getByRole('button', { name: 'Keluar akun', exact: true }).click();

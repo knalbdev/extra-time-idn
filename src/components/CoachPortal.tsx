@@ -1,6 +1,4 @@
 "use client";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { refreshPortalAction, saveMeetingAction, saveRecordAction, signOutAction } from "@/app/coach/actions";
 import { coachLabel } from "@/lib/assessments";
@@ -20,7 +18,6 @@ export function CoachPortal({ initial }: { initial: PortalData }) {
 }
 
 function PortalWorkspace({ initial }: { initial: PortalData }) {
-  const router = useRouter();
   const { busy, run, notify, ask } = usePortalFeedback();
   const [portal, setPortal] = useState(initial);
   const data = portal.sessions;
@@ -78,7 +75,7 @@ function PortalWorkspace({ initial }: { initial: PortalData }) {
     }); });
   }
   return <div className="min-h-screen bg-surface text-primary">
-    <header className="print-hide sticky top-0 z-30 border-b border-outline-variant bg-white/95 backdrop-blur-xl"><div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-4 sm:px-8"><Link href="/" onClick={e => { if (dirty || busy) { e.preventDefault(); void navigate(() => router.push("/")); } }} className="font-heading text-sm font-bold">IDN Akhwat<span className="mt-1 block text-[10px] font-medium tracking-widest text-on-surface-variant">{portal.profile.role === "admin" ? "ADMIN" : "COACH"} WORKSPACE</span></Link><div className="flex flex-wrap gap-2"><button disabled={busy} className={subtle} onClick={refreshData}>Refresh data</button><button disabled={busy} className={subtle} onClick={requestLogout}>Keluar akun</button></div></div></header>
+    <header className="print-hide sticky top-0 z-30 border-b border-outline-variant bg-white/95 backdrop-blur-xl"><div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-4 sm:px-8"><div className="font-heading text-sm font-bold">IDN Akhwat<span className="mt-1 block text-[10px] font-medium tracking-widest text-on-surface-variant">{portal.profile.role === "admin" ? "ADMIN" : "COACH"} WORKSPACE</span></div><div className="flex flex-wrap gap-2"><button disabled={busy} className={subtle} onClick={refreshData}>Refresh data</button><button disabled={busy} className={subtle} onClick={requestLogout}>Keluar akun</button></div></div></header>
     <main className="mx-auto flex max-w-7xl flex-col gap-6 px-4 py-7 sm:px-8">
       {coach && coach.eskuls.length > 1 && <div className="print-hide flex flex-wrap gap-2">{coach.eskuls.map(key => <button disabled={busy} key={key} className={subtle} onClick={() => navigate(() => {setEskulChoice(key);setMeetingId(null);setStudentId(null);setForm(null);setLevel("all");setClassName("all");})}>{ESKUL_META[key].label}</button>)}</div>}
       {portal.profile.role === "admin" ? <><div className="print-hide"><PageHeading eyebrow="ADMINISTRASI" title={adminTab === "reporting" ? "Laporan ekstrakurikuler" : "Manajemen coach"} description="Kelola penugasan coach dan generate laporan absensi serta penilaian siswi." icon="manage_accounts" /></div><nav aria-label="Menu admin" className="print-hide flex flex-wrap gap-2 border-b border-outline-variant pb-3">{[{ key: "management", label: "Manajemen coach" }, { key: "reporting", label: "Reporting ekskul" }].map(item => <button key={item.key} onClick={() => setAdminTab(item.key as typeof adminTab)} className={`rounded-xl px-4 py-3 text-xs font-semibold ${adminTab === item.key ? "bg-primary text-white" : "bg-white text-on-surface-variant"}`}>{item.label}</button>)}</nav>{adminTab === "reporting" ? <AdminCoachReporting coaches={portal.coaches} data={data} students={portal.students} /> : <><CoachManagement portal={portal} onSaved={setPortal} /></>}</> : coach && eskul ? <>

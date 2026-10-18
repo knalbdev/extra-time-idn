@@ -68,3 +68,13 @@ Next.js diperbarui ke 16.4.2 untuk advisori keamanan runtime. Audit runtime (`np
 - Laporan admin berupa presentasi dengan navigasi slide, cover berlogo IDN, ringkasan, rekap per kelas, dan tabel penilaian per pertemuan. Materi/konteks ditulis pada header pertemuan, standar A–E di ringkasan. Catatan panjang berlanjut ke baris/slide berikutnya tanpa dipotong.
 - Cetak/Simpan PDF mencetak semua slide dalam A4 landscape, satu slide per halaman. Ini PDF bergaya presentasi; belum menyediakan file PowerPoint. Ekspor CSV tetap tersedia.
 - Pengujian browser menggunakan data uji lokal, termasuk catatan 2.000 karakter, pemulihan setelah refresh gagal, warna absensi, dialog kustom, layout ponsel, serta jumlah/orientasi halaman PDF dan batas isi terhadap footer.
+
+## Perbaikan scroll dan navigasi workspace
+
+Bug scroll direproduksi pada browser uji: setelah login berhasil, tidak ada dialog terbuka tetapi `body` masih memiliki `overflow: hidden`. Popup login dan loading sebelumnya menyimpan/mengembalikan pengaturan overflow masing-masing. Saat keduanya dilepas dalam urutan berbeda, snapshot milik loading dapat mengunci halaman kembali.
+
+Semua dialog portal kini memakai `src/lib/use-modal-dialog.ts`: kepemilikan scroll lock dibagi melalui token, pengaturan awal body/html hanya dipulihkan setelah pemilik terakhir selesai. Dialog ditutup dalam cleanup layout effect sebelum halaman lain ditampilkan agar modal browser tidak menyisakan penguncian interaksi.
+
+Judul kiri atas workspace berupa identitas, tanpa tautan keluar. Beranda `/` memeriksa akun aktif di server dan mengarahkan coach/admin yang masih masuk ke `/coach`, termasuk akses langsung atau Back. Login/logout juga membatalkan cache halaman beranda. Pengguna yang belum masuk tetap dapat membuka landing page/dashboard publik. Proxy memperbarui sesi pada beranda dan portal; tidak ada perubahan schema SQL.
+
+Regresi `node tests/portal-navigation.e2e.mjs` memakai fixture lokal yang sama dengan tes login. Jalankan pada fixture baru SEBELUM `tests/portal-login.e2e.mjs` (tes login menonaktifkan coach renang sebagai bagian dari pengujiannya). Cakupan desktop 1280px dan ponsel 390px: masuk dari dashboard, buka/tutup dialog berulang, login dengan dua modal bertumpuk, scroll menggunakan roda mouse, refresh, Batal/keluar, Back/akses langsung beranda, dan kembali ke portal tanpa reload. Tes login juga memeriksa bahwa login tidak meninggalkan scroll lock.
