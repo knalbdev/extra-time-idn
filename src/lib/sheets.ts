@@ -2,256 +2,172 @@ import Papa from "papaparse";
 import { CLASS_LIST, ESKUL_META, ESKUL_ORDER, SMK_CLASSES, SMP_CLASSES, SPREADSHEET_ID } from "./constants";
 import { EskulEvent, EskulKey, StatusKey } from "./types";
 
-const MONTH_MAP: Record<string, number> = {
-  jan: 0,
-  feb: 1,
-  mar: 2,
-  apr: 3,
-  mei: 4,
-  jun: 5,
-  jul: 6,
-  agu: 7,
-  sep: 8,
-  okt: 9,
-  nov: 10,
-  des: 11,
-};
+type SheetTable = { headers: string[]; rows: string[][]; revised: boolean };
+const MONTH_MAP: Record<string, number> = { jan: 1, feb: 2, mar: 3, apr: 4, mei: 5, jun: 6, jul: 7, agu: 8, sep: 9, okt: 10, nov: 11, des: 12 };
+const canonical = (value: string) => value.toLowerCase().replace(/[^\p{L}\p{N}]/gu, "");
+const clean = (value: string | undefined) => value?.trim() || undefined;
 
-function parseIndoDate(raw: string | undefined): { iso: string; label: string } | null {
-  if (!raw) return null;
-  const trimmed = raw.trim();
-  const m = trimmed.match(/(\d{1,2})\s+([A-Za-z]+)\.?\s+(\d{4})/);
-  if (!m) return null;
-  const day = parseInt(m[1], 10);
-  const monKey = m[2].toLowerCase().slice(0, 3);
-  const month = MONTH_MAP[monKey];
-  if (month === undefined) return null;
-  const year = parseInt(m[3], 10);
-  const iso = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-  return { iso, label: trimmed };
+function parseDate(raw: string | undefined): { iso: string; label: string } | null {
+  const label = clean(raw);
+  if (!label) return null;
+  let day: number, month: number, year: number;
+  const iso = label.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  const numeric = label.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/);
+  const indo = label.match(/(\d{1,2})\s+([A-Za-z]+)\.?\s+(\d{4})/);
+  if (iso) [, year, month, day] = iso.map(Number);
+  else if (numeric) [, day, month, year] = numeric.map(Number);
+  else if (indo) { day = Number(indo[1]); month = MONTH_MAP[indo[2].toLowerCase().slice(0, 3)]; year = Number(indo[3]); }
+  else return null;
+  if (!month || month > 12 || day < 1 || day > 31) return null;
+  const result = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+  if (new Date(`${result}T00:00:00Z`).toISOString().slice(0, 10) !== result) return null;
+  return { iso: result, label };
 }
 
-function extractClasses(text: string | undefined): string[] {
-  if (!text) return [];
-  const lower = text.toLowerCase();
-  const hasSmp = /\bsmp\b/.test(lower);
-  const hasSmk = /\bsmk\b/.test(lower);
-
-  // "Semua jenjang" / "seluruh kelas" style entries apply to every class —
-  // expand them so month/class filtering still matches, rather than losing
-  // the info as an empty (and misleadingly "undetermined") class list.
-  if (/(semua|seluruh)\s+(jenjang|kelas|siswa)/.test(lower) || (hasSmp && hasSmk)) {
-    return [...CLASS_LIST];
-  }
-  if (hasSmp) return [...SMP_CLASSES];
-  if (hasSmk) return [...SMK_CLASSES];
-
-  const found: string[] = [];
-  const padded = ` ${text} `;
-  for (const c of CLASS_LIST) {
-    const pattern = c.replace(" ", "\\s+");
-    const re = new RegExp(`(?:^|[^0-9A-Za-z])${pattern}(?![0-9A-Za-z])`, "i");
-    if (re.test(padded)) found.push(c);
-  }
-  return found;
+function extractClasses(raw: string | undefined): string[] {
+  if (!raw) return [];
+  const lower = raw.toLowerCase();
+  const smp = /\bsmp\b/.test(lower), smk = /\bsmk\b/.test(lower);
+  if (smp && smk) return [...CLASS_LIST];
+  if (smp) return [...SMP_CLASSES];
+  if (smk) return [...SMK_CLASSES];
+  if (/(semua|seluruh)\s+(jenjang|kelas|siswa)/.test(lower)) return [...CLASS_LIST];
+  return CLASS_LIST.filter(name => new RegExp(`(?:^|[^0-9A-Za-z])${name.replace(" ", "\\s+")}(?![0-9A-Za-z])`, "i").test(` ${raw} `));
 }
 
 function normalizeStatus(raw: string | undefined): StatusKey {
-  const s = (raw || "").trim().toLowerCase().replace(/\s+/g, " ");
-  if (!s) return "terjadwal";
-  if (s.includes("tiada") || s.includes("batal")) return "ditiadakan";
-  if (s.includes("libur")) return "libur";
-  if (s.includes("belum")) return "belum";
-  if (/\b(?:sudah|telah) (?:terlaksana|dilaksanakan|selesai)\b|^(?:terlaksana|selesai)$/.test(s)) return "selesai";
+  const value = (raw || "").trim().toLowerCase().replace(/\s+/g, " ");
+  if (value.includes("tiada") || value.includes("batal")) return "ditiadakan";
+  if (value.includes("libur")) return "libur";
+  if (value.includes("belum")) return "belum";
+  if (/\b(?:sudah|telah) (?:terlaksana|dilaksanakan|selesai)\b|^(?:terlaksana|selesai)$/.test(value)) return "selesai";
   return "terjadwal";
 }
 
-function statusColumn(rows: string[][], fallback: number, occurrence = 0): number {
-  const headers = (rows[0] ?? []).map(value => value.toLowerCase().replace(/[^\p{L}\p{N}]/gu, ""));
-  const named = headers.flatMap((value, index) => /^statuspelaksanaan\d*$/.test(value) ? [index] : []);
-  // Older sheets/fixtures use Status, Status1 and Status2. Prefer the explicit
-  // Status Pelaksanaan columns, even when they are blank or have been moved.
-  if (named.length) return named[occurrence] ?? fallback;
-  const legacy = headers.flatMap((value, index) => /^status\d*$/.test(value) ? [index] : []);
-  return legacy[occurrence] ?? fallback;
-}
-
-function clean(v: string | undefined): string | undefined {
-  const t = (v || "").trim();
-  return t.length ? t : undefined;
-}
-
-async function fetchSheetRows(sheetName: string): Promise<string[][]> {
-  const url = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(
-    sheetName,
-  )}`;
-  const res = await fetch(url, { cache: "no-store" });
-  if (!res.ok) {
-    throw new Error(`Gagal memuat sheet "${sheetName}" (status ${res.status})`);
+function table(rows: string[][], sheet: string): SheetTable {
+  const index = rows.findIndex(row => {
+    const names = row.map(canonical);
+    return (names.some(name => name.startsWith("tanggal") || name.endsWith("tanggal")) && names.some(name => name.includes("kelas")))
+      || (names.includes("ekstrakurikuler") && names.includes("waktu"));
+  });
+  if (index < 0) {
+    if (rows.length <= 1) return { headers: [], rows: [], revised: false };
+    throw new Error(`Susunan kolom jadwal ${sheet} belum dapat dibaca. Silakan hubungi admin.`);
   }
-  const text = await res.text();
-  const parsed = Papa.parse<string[]>(text.trim(), { skipEmptyLines: true });
-  return parsed.data;
+  const headers = rows[index].map(canonical);
+  return { headers, rows: rows.slice(index + 1), revised: headers.includes("jenisbaris") };
 }
-
-function parseRenang(rows: string[][]): EskulEvent[] {
-  const events: EskulEvent[] = [];
-  const status = statusColumn(rows, 4);
-  for (const row of rows.slice(1)) {
-    const d = parseIndoDate(row[1]);
-    if (!d) continue;
-    const classes = extractClasses(row[2]);
-    events.push({
-      id: `renang-${d.iso}-${row[2]}`,
-      eskul: "renang",
-      eskulLabel: ESKUL_META.renang.label,
-      weekNo: clean(row[0]) ?? "",
-      date: d.iso,
-      dateLabel: d.label,
-      time: "Ba'da Ashar",
-      classes: classes.length ? classes : row[2] ? [row[2].trim()] : [],
-      status: clean(row[status]) ?? "",
-      statusNormalized: normalizeStatus(row[status]),
-      teacher: clean(row[3]),
-      result: clean(row[5]),
-      notes: clean(row[6]),
-    });
+function column(t: SheetTable, patterns: RegExp[], fallback: number, occurrence = 0) {
+  for (const pattern of patterns) {
+    const matches = t.headers.flatMap((name, index) => pattern.test(name) ? [index] : []);
+    if (matches.length) return matches[occurrence] ?? fallback;
   }
-  return events;
+  return fallback;
+}
+const DATE = [/^tanggal/, /tanggal$/];
+const CLASSES = [/^kelasyang(?:ikut|bergiliran)$/, /^kelas$/];
+const STATUS = [/^statuspelaksanaan\d*$/, /^statussesi\d+$/, /^status\d*$/];
+const WEEK = [/^mingguke$/, /^pekan$/, /^no$/];
+const TEACHER = [/^gurupendamping$/, /^guru\d*$/];
+const RESULT = [/^hasilpenilaiandokumentasi$/, /^hasil$/];
+
+async function fetchTable(sheet: string): Promise<SheetTable> {
+  try {
+    const url = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheet)}`;
+    const response = await fetch(url, { cache: "no-store", signal: AbortSignal.timeout(20000) });
+    if (!response.ok || response.headers.get("content-type")?.includes("text/html")) throw new Error("Unavailable CSV");
+    const parsed = Papa.parse<string[]>(await response.text(), { skipEmptyLines: "greedy" });
+    if (parsed.errors.some(error => error.code !== "UndetectableDelimiter")) throw new Error("Invalid CSV");
+    return table(parsed.data, sheet);
+  } catch {
+    throw new Error(`Jadwal ${sheet} belum dapat dimuat. Periksa koneksi lalu coba lagi. Jika masih terkendala, hubungi admin.`);
+  }
 }
 
-function normalizeJam(raw: string | undefined, fallback: string): string {
-  const t = clean(raw);
-  if (!t) return fallback;
-  return t.replace(",", ".");
-}
-
-function parsePanahan(rows: string[][]): EskulEvent[] {
+function parseEvents(t: SheetTable, eskul: EskulKey): EskulEvent[] {
   const events: EskulEvent[] = [];
-  for (const row of rows.slice(1)) {
-    const d = parseIndoDate(row[1]);
-    if (!d) continue;
-    const sessions: Array<{
-      suffix: string;
-      defaultTime: string;
-      kelas: number;
-      jam: number;
-      guru: number;
-      status: number;
-    }> = [
-      { suffix: "10", defaultTime: "10.00", kelas: 2, jam: 3, guru: 4, status: statusColumn(rows, 5, 0) },
-      { suffix: "13", defaultTime: "13.00", kelas: 6, jam: 7, guru: 8, status: statusColumn(rows, 9, 1) },
-    ];
-    for (const s of sessions) {
-      const kelasRaw = row[s.kelas];
-      if (!clean(kelasRaw)) continue;
-      const classes = extractClasses(kelasRaw);
-      const time = normalizeJam(row[s.jam], s.defaultTime);
+  const dateIndex = column(t, DATE, ["berkuda", "taekwondo"].includes(eskul) ? 2 : 1);
+  const weekIndex = column(t, WEEK, 0);
+  const slots = eskul === "panahan" ? [0, 1] : [0];
+  for (const [rowIndex, row] of t.rows.entries()) {
+    const date = parseDate(row[dateIndex]);
+    if (!date) continue;
+    const weekNo = clean(row[weekIndex]) ?? "";
+    for (const slot of slots) {
+      const classIndex = eskul === "panahan" ? column(t, [new RegExp(`^sesi${slot + 1}kelas$`), new RegExp(`^kelas${slot + 1}$`)], slot ? 6 : 2)
+        : column(t, CLASSES, ["berkuda", "taekwondo"].includes(eskul) ? 4 : 2);
+      const rawClasses = clean(row[classIndex]);
+      if (eskul === "panahan" && !rawClasses) continue;
+      const statusIndex = column(t, STATUS, eskul === "panahan" ? (slot ? 9 : 5) : eskul === "pramuka" ? 3 : eskul === "renang" ? 4 : 5, slot);
+      const status = clean(row[statusIndex]) ?? "";
+      const notes = clean(row[column(t, [/^catatan$/], eskul === "panahan" ? 11 : eskul === "pramuka" ? 5 : eskul === "renang" ? 6 : 7)]);
+      const rowKind = clean(row[column(t, [/^jenisbaris$/], -1)]);
+      const explicitTime = clean(row[column(t, eskul === "panahan" ? [new RegExp(`^jamsesi${slot + 1}$`), new RegExp(`^jam${slot + 1}$`)] : [/^waktu$/, /^jam$/], eskul === "panahan" ? (slot ? 7 : 3) : -1)]);
+      const fallback = { renang: "Ba'da Ashar", panahan: slot ? "13.00" : "10.00", berkuda: "14.00 (berangkat dari IDN)", taekwondo: "09.00 - 11.00", pramuka: "08.00 - 11.00" }[eskul];
+      const time = (explicitTime ?? fallback).replace(/(\d)[,:](\d{2})/g, "$1.$2");
+      const classes = extractClasses(rawClasses);
+      const group = clean(row[column(t, [/^angkatan$/, /^jenjang$/], ["berkuda", "taekwondo"].includes(eskul) ? 3 : -1)]);
       events.push({
-        id: `panahan-${d.iso}-${s.suffix}`,
-        eskul: "panahan",
-        eskulLabel: ESKUL_META.panahan.label,
-        weekNo: clean(row[0]) ?? "",
-        date: d.iso,
-        dateLabel: d.label,
-        time,
-        extra: `Sesi ${time}`,
-        classes: classes.length ? classes : [kelasRaw.trim()],
-        status: clean(row[s.status]) ?? "",
-        statusNormalized: normalizeStatus(row[s.status]),
-        teacher: clean(row[s.guru]),
-        result: clean(row[10]),
-        notes: clean(row[11]),
+        id: `${eskul}-${date.iso}-${weekNo || rowIndex}-${slot}`,
+        eskul, eskulLabel: ESKUL_META[eskul].label, weekNo, date: date.iso, dateLabel: date.label,
+        time, classes: classes.length ? classes : rawClasses ? [rawClasses] : [], status, statusNormalized: normalizeStatus(status),
+        teacher: clean(row[column(t, TEACHER, eskul === "panahan" ? (slot ? 8 : 4) : eskul === "renang" ? 3 : -1, slot)]),
+        result: clean(row[column(t, RESULT, eskul === "panahan" ? 10 : eskul === "pramuka" ? 4 : eskul === "renang" ? 5 : 6)]),
+        notes, semester: clean(row[column(t, [/^semester$/], ["berkuda", "taekwondo"].includes(eskul) ? 1 : -1)]),
+        extra: [eskul === "panahan" ? `Sesi ${time}` : eskul === "taekwondo" && group ? `Jenjang ${group}` : group, rowKind && rowKind !== "HISTORIS TERKUNCI" && rowKind !== "RENCANA TETAP" ? rowKind : undefined].filter(Boolean).join(" · ") || undefined,
       });
     }
   }
   return events;
 }
 
-function parseBerkuda(rows: string[][]): EskulEvent[] {
-  const events: EskulEvent[] = [];
-  const status = statusColumn(rows, 5);
-  for (const row of rows.slice(1)) {
-    const d = parseIndoDate(row[2]);
-    if (!d) continue;
-    const rawClasses = clean(row[4]);
-    const classes = extractClasses(rawClasses);
-    events.push({
-      id: `berkuda-${d.iso}-${row[3]}`,
-      eskul: "berkuda",
-      eskulLabel: ESKUL_META.berkuda.label,
-      weekNo: clean(row[0]) ?? "",
-      date: d.iso,
-      dateLabel: d.label,
-      time: "14.00 (berangkat dari IDN)",
-      extra: clean(row[3]),
-      classes: classes.length ? classes : rawClasses ? [rawClasses] : [],
-      status: clean(row[status]) ?? "",
-      statusNormalized: normalizeStatus(row[status]),
-      semester: clean(row[1]),
-      result: clean(row[6]),
-      notes: clean(row[7]),
-    });
+type CombinedEvent = { eskul: EskulKey; date: string; time: string; classes: string[] };
+function parseCombined(t: SheetTable): CombinedEvent[] {
+  const result: CombinedEvent[] = [];
+  for (const row of t.rows) {
+    const eskul = ESKUL_ORDER.find(key => canonical(row[column(t, [/^ekstrakurikuler$/], 3)] ?? "") === canonical(ESKUL_META[key].label));
+    const date = parseDate(row[column(t, DATE, 0)]);
+    const time = clean(row[column(t, [/^waktu$/], 2)]);
+    if (eskul && date && time) result.push({ eskul, date: date.iso, time: time.replace(/(\d)[,:](\d{2})/g, "$1.$2").replace(/[–—]/g, " - "), classes: extractClasses(row[column(t, CLASSES, 5)]) });
   }
-  return events;
+  return result;
 }
+const startTime = (time: string) => time.match(/\d{1,2}[.:,]\d{2}/)?.[0].replace(/[:,]/g, ".");
+const joinValues = (values: (string | undefined)[]) => [...new Set(values.filter(Boolean))].join(" · ") || undefined;
 
-function parseTaekwondo(rows: string[][]): EskulEvent[] {
-  const events: EskulEvent[] = [];
-  const status = statusColumn(rows, 5);
-  for (const row of rows.slice(1)) {
-    const d = parseIndoDate(row[2]);
-    if (!d) continue;
-    const rawClasses = clean(row[4]);
-    const classes = extractClasses(rawClasses);
-    events.push({
-      id: `taekwondo-${d.iso}-${row[3]}`,
-      eskul: "taekwondo",
-      eskulLabel: ESKUL_META.taekwondo.label,
-      weekNo: clean(row[0]) ?? "",
-      date: d.iso,
-      dateLabel: d.label,
-      time: "09.00 - 11.00",
-      extra: clean(row[3]) ? `Jenjang ${row[3].trim()}` : undefined,
-      classes: classes.length ? classes : rawClasses ? [rawClasses] : [],
-      status: clean(row[status]) ?? "",
-      statusNormalized: normalizeStatus(row[status]),
-      semester: clean(row[1]),
-      result: clean(row[6]),
-      notes: clean(row[7]),
-    });
+function reconcile(events: EskulEvent[], combined: CombinedEvent[]): EskulEvent[] {
+  const matches = new Map<CombinedEvent, EskulEvent[]>();
+  for (const event of events) {
+    const match = combined.find(row => row.eskul === event.eskul && row.date === event.date
+      && event.classes.length > 0 && event.classes.every(name => row.classes.includes(name))
+      && (event.eskul !== "panahan" || startTime(row.time) === startTime(event.time)));
+    if (!match) throw new Error(`Jadwal ${event.eskulLabel} tanggal ${event.date} belum sesuai dengan tab Jadwal Gabungan. Silakan hubungi admin.`);
+    const list = matches.get(match) ?? [];
+    list.push(event); matches.set(match, list);
   }
-  return events;
-}
-
-function parsePramuka(rows: string[][]): EskulEvent[] {
-  const events: EskulEvent[] = [];
-  const status = statusColumn(rows, 3);
-  for (const row of rows.slice(1)) {
-    const d = parseIndoDate(row[1]);
-    if (!d) continue;
-    const rawClasses = clean(row[2]);
-    const classes = extractClasses(rawClasses);
-    events.push({
-      id: `pramuka-${d.iso}`,
-      eskul: "pramuka",
-      eskulLabel: ESKUL_META.pramuka.label,
-      weekNo: clean(row[0]) ?? "",
-      date: d.iso,
-      dateLabel: d.label,
-      time: "08.00 - 11.00",
-      classes: classes.length ? classes : rawClasses ? [rawClasses] : [],
-      status: clean(row[status]) ?? "",
-      statusNormalized: normalizeStatus(row[status]),
-      result: clean(row[4]),
-      notes: clean(row[5]),
-    });
+  const output: EskulEvent[] = [];
+  for (const [match, group] of matches) {
+    // A combined riding trip is one schedule even when two grades participate.
+    // Keep different actual attendance statuses separate until they agree.
+    const classes = CLASS_LIST.filter(name => group.some(event => event.classes.includes(name)));
+    const merge = group.length > 1 && match.eskul === "berkuda" && classes.length === match.classes.length && group.every(event => event.status === group[0].status);
+    const enriched = (event: EskulEvent) => ({ ...event, time: match.time, extra: event.eskul === "panahan" ? event.extra?.replace(/^Sesi [^·]+/, `Sesi ${match.time} `).trim() : event.extra });
+    if (!merge) { output.push(...group.map(enriched)); continue; }
+    output.push({ ...enriched(group[0]), id: `berkuda-${match.date}-${classes.join("-")}`, classes, weekNo: group.map(event => event.weekNo).join(" / "), extra: joinValues(group.map(event => event.extra)), teacher: joinValues(group.map(event => event.teacher)), notes: joinValues(group.map(event => event.notes)), result: joinValues(group.map(event => event.result)) });
   }
-  return events;
+  // A missing program row must not silently remove a schedule from the calendar.
+  for (const row of combined) if (events.some(event => event.eskul === row.eskul) && !matches.has(row)) throw new Error(`Ada jadwal ${ESKUL_META[row.eskul].label} yang belum sesuai antara tab kegiatan dan Jadwal Gabungan. Silakan hubungi admin.`);
+  return output;
 }
 
 export async function getAllEvents(enabled: EskulKey[] = ESKUL_ORDER): Promise<EskulEvent[]> {
-  const parsers = { renang: parseRenang, panahan: parsePanahan, berkuda: parseBerkuda, taekwondo: parseTaekwondo, pramuka: parsePramuka };
-  const groups = await Promise.all(ESKUL_ORDER.filter(key => enabled.includes(key)).map(key => fetchSheetRows(ESKUL_META[key].sheet).then(parsers[key])));
-  return groups.flat().sort((a, b) => a.date === b.date ? a.eskul.localeCompare(b.eskul) : a.date.localeCompare(b.date));
+  const keys = ESKUL_ORDER.filter(key => enabled.includes(key));
+  if (!keys.length) return [];
+  const sources = await Promise.all(keys.map(async key => ({ key, table: await fetchTable(ESKUL_META[key].sheet) })));
+  const events = sources.flatMap(source => parseEvents(source.table, source.key));
+  // Program tabs retain the actual status, teacher and notes. The revised
+  // combined calendar supplies times and represents shared riding trips once.
+  const result = sources.some(source => source.table.revised) ? reconcile(events, parseCombined(await fetchTable("Jadwal Gabungan"))) : events;
+  if (new Set(result.map(event => event.id)).size !== result.length) throw new Error("Ada jadwal dengan identitas ganda. Silakan hubungi admin untuk memeriksa spreadsheet.");
+  return result.sort((a, b) => a.date.localeCompare(b.date) || a.eskul.localeCompare(b.eskul) || (startTime(a.time) ?? "").localeCompare(startTime(b.time) ?? ""));
 }

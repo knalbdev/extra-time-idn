@@ -14,7 +14,7 @@ import { ScheduleView } from "./ScheduleView";
 import { Sidebar, View } from "./Sidebar";
 import { Topbar } from "./Topbar";
 
-const CACHE_KEY = "extratime:schedule-cache:v1";
+const CACHE_KEY = "extratime:schedule-cache:v2";
 
 function readCache(): ScheduleResponse | null {
   if (typeof window === "undefined") return null;

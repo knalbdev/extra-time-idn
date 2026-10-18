@@ -165,3 +165,56 @@ test('schedule reads Status Pelaksanaan by header, including separate Panahan se
     assert.equal(events.find(e => e.eskul === 'pramuka').status, 'Menunggu konfirmasi', 'Keep the original label for statuses outside the common list');
   } finally { globalThis.fetch = original; }
 });
+
+test('revised spreadsheet preserves history, replacement sessions, combined trips, exact scopes and actual status', async () => {
+  const { getAllEvents } = load('src/lib/sheets.ts');
+  const original = globalThis.fetch;
+  const requested = [];
+  globalThis.fetch = async url => {
+    const name = new URL(url).searchParams.get('sheet'); requested.push(name);
+    return new Response(fs.readFileSync(`tests/fixtures/sheets-revised-2026-10/${name}.csv`, 'utf8'));
+  };
+  try {
+    const events = await getAllEvents();
+    assert.equal(events.length, 161);
+    assert.equal(new Set(events.map(event => event.id)).size, 161);
+    assert.deepEqual(Object.fromEntries(['renang','panahan','berkuda','taekwondo','pramuka'].map(key => [key, events.filter(event => event.eskul === key).length])), {renang:46,panahan:50,berkuda:31,taekwondo:13,pramuka:21});
+    const replacements = events.filter(event => event.eskul === 'panahan' && event.weekNo.startsWith('M'));
+    assert.equal(replacements.length, 4);
+    assert.ok(replacements.every(event => event.time === '11.30 - 12.30'));
+    assert.equal(events.filter(event => event.eskul === 'panahan' && event.date === '2026-10-24').length, 3);
+    const tk = events.filter(event => event.eskul === 'taekwondo');
+    assert.ok(tk.filter(event => event.weekNo.startsWith('R')).every(event => event.time === '11.30 - 13.30'));
+    assert.ok(tk.filter(event => !event.weekNo.startsWith('R')).every(event => event.time === '09.00 - 11.00'));
+    assert.equal(tk.find(event => event.weekNo === 'R01').classes.length, 6);
+    assert.equal(tk.find(event => event.weekNo === 'R02').classes.length, 4);
+    assert.equal(events.find(event => event.eskul === 'pramuka').classes.length, 10);
+    const riding = events.filter(event => event.eskul === 'berkuda' && event.date === '2026-10-31');
+    assert.equal(riding.length, 1);
+    assert.deepEqual(riding[0].classes, ['10 RPL','10 DKV','11 RPL','11 DKV']);
+    assert.equal(events.filter(event => event.eskul === 'berkuda' && event.date < '2026-10-10').length, 5, 'Retain canceled Sunday history');
+    assert.ok(events.filter(event => event.date > '2026-10-18').every(event => event.status === '' && event.statusNormalized === 'terjadwal'), 'Ignore misleading Status Jadwal=Selesai for future Panahan plans');
+    assert.equal(events.at(-1).date, '2027-06-29');
+    assert.ok(events.find(event => event.eskul === 'renang' && event.date === '2026-08-04').teacher);
+    assert.ok(events.find(event => event.eskul === 'renang' && event.date === '2027-06-29').notes.includes('validasi'));
+    assert.equal(requested.length, 6);
+    const active = await getAllEvents(['renang','panahan','berkuda','taekwondo']);
+    assert.equal(active.length, 140);
+    assert.ok(!active.some(event => event.eskul === 'pramuka'));
+  } finally { globalThis.fetch = original; }
+});
+
+test('CSV failures are explicit and empty schedules remain empty', async () => {
+  const { getAllEvents } = load('src/lib/sheets.ts');
+  const original = globalThis.fetch;
+  try {
+    globalThis.fetch = async () => new Response('Header\n');
+    assert.deepEqual(await getAllEvents(['renang']), []);
+    globalThis.fetch = async () => new Response('<html>Sign in</html>', {headers:{'content-type':'text/html'}});
+    await assert.rejects(getAllEvents(['renang']), /Jadwal Renang belum dapat dimuat/);
+    globalThis.fetch = async () => new Response('Judul\nKolom yang berubah\nData lainnya');
+    await assert.rejects(getAllEvents(['renang']), /Jadwal Renang belum dapat dimuat/);
+    globalThis.fetch = () => { throw Error('Must not fetch paused activities'); };
+    assert.deepEqual(await getAllEvents([]), []);
+  } finally { globalThis.fetch = original; }
+});
