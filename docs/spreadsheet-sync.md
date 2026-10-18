@@ -1,46 +1,47 @@
-# Penarikan jadwal setelah revisi spreadsheet 18 Oktober 2026
+# Sumber jadwal Google Sheets
 
-Sumber tetap workbook Google Sheets `1-GI5Qt_pDLMV3Gty8Cc2X9u12VY_q9upN_6hr0V-VP8`. Tidak diperlukan migration database atau environment variable baru.
+Sumber aktif: [Jadwal Ekstrakurikuler IDNA 26/27](https://docs.google.com/spreadsheets/d/1nDi_YLMmoKWGvUf920GDVsPCIE4J7z_phaxsLwKSu3E/edit).
 
-## Tab sumber
+## Pengaturan Google Sheets
 
-- **Renang, Panahan, Berkuda, Taekwondo, Pramuka**: tanggal, kelas, status pelaksanaan aktual, pendamping, catatan, dokumentasi, serta identitas baris/pertemuan.
-- **Jadwal Gabungan**: waktu tiap agenda revisi dan penggabungan perjalanan Berkuda yang mencakup dua angkatan. Data dicocokkan berdasarkan kegiatan, tanggal, kelas, dan jam mulai untuk Panahan.
-- Tab Ringkasan, Rekap per Kelas, Panduan Revisi, dan Audit & Validasi dibaca saat audit, tetapi tidak digunakan sebagai bukti bahwa kegiatan telah terlaksana.
+Tidak memerlukan Apps Script, deployment di Google Sheets, Google API key, atau environment variable tambahan. Web membaca CSV publik melalui endpoint `gviz/tq?tqx=out:csv&sheet=...`. Akses tanpa login telah diuji pada 18 Oktober 2026. Pertahankan izin berbagi **Siapa saja yang memiliki link → Pelihat**. Tidak perlu memberi hak edit atau memakai menu Publish to web untuk metode ini.
 
-Header tidak harus berada pada baris pertama. Parser mencari baris kolom setelah judul dan keterangan, lalu membaca nama kolom. Bentuk CSV lama dengan header langsung di baris pertama tetap didukung.
+- **Jadwal Induk** adalah tempat mengelola tanggal, kelas peserta, waktu, dan **Status pelaksanaan** (kolom J saat audit).
+- Tab **Renang, Panahan, Berkuda, Taekwondo, Pramuka** mengikuti Jadwal Induk secara otomatis. Web membaca tab-tab tersebut berdasarkan nama dan hanya memuat eskul yang aktif.
+- Tab ringkasan/audit tidak dipakai untuk menentukan apakah kegiatan telah terlaksana.
+- Hindari mengganti nama tab atau menghapus formula penghubung. Jika susunan spreadsheet berubah lagi, sesuaikan parser dan jalankan verifikasi.
 
-## Perilaku penting
+## Pembacaan data
 
-- Panahan memakai **Status Sesi 1/2**, bukan **Status Jadwal**. Pada snapshot audit, beberapa rencana masa depan tertulis `Selesai` di Status Jadwal, sedangkan status sesi masih kosong; web mempertahankan status aktual yang kosong.
-- Empat sesi pengganti Panahan 11.30–12.30 tetap agenda tersendiri, tanpa identitas yang bertabrakan dengan sesi reguler pada tanggal yang sama.
-- Taekwondo historis tetap 09.00–11.00; rencana revisi memakai 11.30–13.30 sesuai kalender gabungan.
-- `Seluruh kelas SMP` hanya mencakup enam kelas SMP; `Seluruh kelas SMK` hanya empat kelas SMK. Pramuka seluruh jenjang mencakup sepuluh kelas.
-- Lima perjalanan gabungan Berkuda dihitung sebagai satu agenda per perjalanan, dengan seluruh kelas peserta. Pendamping, catatan, dan dokumentasi dari kedua baris tetap disertakan. Jika status aktual kedua angkatan berbeda, baris dipertahankan terpisah agar status tidak tertimpa.
-- Riwayat Ahad yang Libur/Ditiadakan dipertahankan. Revisi tanggal/hari tidak menghapus sejarah pelaksanaan.
-- Kegiatan nonaktif tetap mengikuti pengaturan admin. Tab eskul nonaktif tidak dimuat; data kegiatan tersebut dari kalender gabungan tidak ditampilkan.
-- Cache browser memakai versi baru (`extratime:schedule-cache:v2`) agar cache dari parser lama tidak menampilkan waktu/kelas/identitas jadwal yang keliru. Refresh mengambil CSV terbaru tanpa cache HTTP, dengan batas tunggu 20 detik per permintaan.
-- Kegagalan koneksi, respons HTML/login, CSV rusak, identitas ganda, atau ketidaksesuaian antar-tab ditampilkan sebagai kegagalan pemuatan; hasil parsial tidak diklaim sebagai jadwal lengkap.
+Header dicari setelah judul/keterangan; Google CSV kadang menggabungkan judul dengan sel header tanggal. Kolom dipetakan berdasarkan nama, bukan posisi tetap. Format workbook aktif memiliki **satu sesi per baris**, termasuk Panahan. Kelas dibaca dari **Kelas peserta**, waktu dari **Mulai** dan **Selesai***, status dari **Status**, dan catatan dari **Catatan**. Jam selesai pada sumber merupakan estimasi. Catatan keberangkatan Berkuda dipertahankan.
 
-Saat mengubah tanggal, kelas, atau waktu, pastikan tab eskul dan **Jadwal Gabungan** tetap sejalan. Perubahan status pelaksanaan dilakukan pada tab eskul terkait. Parser tidak memakai ringkasan status dari kalender gabungan untuk menimpa status aktual.
+Sesi Panahan pada tanggal yang sama tetap terpisah menurut waktu dan kelas. Satu perjalanan Berkuda untuk dua kelas dihitung satu sesi. Identitas sesi mengikuti kegiatan, tanggal, jam, dan kelas, sehingga urutan baris dapat diubah tanpa mengganti identitasnya. Kolom yang tidak tersedia, seperti guru/hasil dokumentasi, dibiarkan kosong.
 
-## Hasil audit langsung
+Status tidak disimpulkan dari tanggal. `Terjadwal`, status kosong, `Libur`, dan `Ditiadakan` tidak dihitung sebagai kegiatan terlaksana. Rekap admin menghitung hanya label **Sudah Terlaksana**, sesuai rentang tanggal inklusif.
+
+Cache browser menyertakan versi parser dan ID workbook agar data spreadsheet lama tidak digunakan kembali setelah perpindahan sumber. Refresh membaca CSV terbaru tanpa cache HTTP; batas tunggu 20 detik per permintaan. Kegagalan akses, HTML halaman login, CSV rusak, atau identitas ganda menghasilkan pesan gagal. Riwayat cache dari sumber yang sama dapat ditampilkan ketika koneksi bermasalah.
+
+Parser format workbook sebelumnya dipertahankan sebagai kompatibilitas dan diuji dengan fixture terpisah. Workbook aktif tidak membutuhkan tab Jadwal Gabungan.
+
+## Snapshot audit 18 Oktober 2026
 
 | Ekstrakurikuler | Agenda | Sudah Terlaksana |
 | --- | ---: | ---: |
 | Renang | 46 | 9 |
 | Panahan | 50 | 8 |
-| Berkuda | 31 | 1 |
+| Berkuda | 26 | 1 |
 | Taekwondo | 13 | 2 |
-| Pramuka | 21 | 1 |
-| Total | 161 | 21 |
+| Pramuka | 14 | 1 |
+| Total | 149 | 21 |
 
-Rentang: 4 Agustus 2026–29 Juni 2027. Semua identitas agenda unik. Jika Pramuka nonaktif, hasilnya 140 agenda dan 20 sesi terlaksana. Angka ini merupakan snapshot saat audit, bukan batas jumlah agenda yang dikunci pada aplikasi.
+Rentang 4 Agustus 2026–29 Juni 2027. Seluruh 149 baris sesuai dengan Jadwal Induk untuk tanggal, kegiatan, jam, kelas, dan status; identitas unik. Jika Pramuka nonaktif, tersedia 135 agenda dan 20 sesi terlaksana. Angka ini snapshot, bukan batas di aplikasi.
 
-## Verifikasi
+## Pengujian dan penerapan
 
-`node --test tests/coach-sessions.test.mjs` menguji parser menggunakan snapshot CSV yang judul/header, tanggal, kelas, waktu, status, dan catatan jadwalnya mengikuti sumber; nama pendamping dan isi dokumentasi pada fixture disamarkan. Cakupan termasuk sesi pengganti, perjalanan gabungan, batas jenjang, riwayat, status kosong, serta respons gagal.
+- `node --test tests/coach-sessions.test.mjs`: parser format lama dan baru, kecocokan seluruh baris dengan Jadwal Induk, identitas tetap setelah baris diurutkan ulang, kelas, status, rekap, serta penanganan kegagalan.
+- `node tests/spreadsheet-sync.e2e.mjs`: snapshot CSV workbook aktif, dashboard/jadwal, filter, refresh, ponsel, dan rekap admin menggunakan akun fixture lokal.
+- `LIVE_SHEETS=1 node tests/spreadsheet-sync.e2e.mjs`: CSV Google langsung melalui browser, termasuk akses tanpa login dan CORS. Ekspektasi jumlah mengikuti snapshot audit; perbarui jika data sumber berubah.
 
-`node tests/spreadsheet-sync.e2e.mjs` memakai snapshot tersebut dan fixture akun lokal. `LIVE_SHEETS=1 node tests/spreadsheet-sync.e2e.mjs` memeriksa CSV Google yang sebenarnya melalui browser, termasuk CORS publik tanpa login Google, filter bulan/kelas, refresh, tampilan ponsel, dan rekap admin. Angka ekspektasi tes mengikuti snapshot audit; perlu diperbarui jika isi workbook kemudian berubah.
+Ikuti prosedur build/start fixture pada `docs/supabase-integration.md` untuk port 3033. Pengujian tidak mengubah spreadsheet atau Supabase produksi.
 
-Ikuti prosedur fixture dalam `docs/supabase-integration.md` untuk build/start pengujian pada port 3033. Tes tidak mengubah spreadsheet atau data Supabase produksi.
+Setelah perubahan source diterapkan, deploy source terbaru ke Vercel. Tidak perlu mengubah konfigurasi Supabase atau menjalankan migration database untuk pergantian spreadsheet ini. Pembaruan isi spreadsheet berikutnya dapat diambil lewat **Refresh data** tanpa deploy ulang selama struktur dan nama tab tetap sama.

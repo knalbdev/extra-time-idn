@@ -65,7 +65,7 @@ function column(t: SheetTable, patterns: RegExp[], fallback: number, occurrence 
   return fallback;
 }
 const DATE = [/^tanggal/, /tanggal$/];
-const CLASSES = [/^kelasyang(?:ikut|bergiliran)$/, /^kelas$/];
+const CLASSES = [/^kelaspeserta$/, /^kelasyang(?:ikut|bergiliran)$/, /^kelas$/];
 const STATUS = [/^statuspelaksanaan\d*$/, /^statussesi\d+$/, /^status\d*$/];
 const WEEK = [/^mingguke$/, /^pekan$/, /^no$/];
 const TEACHER = [/^gurupendamping$/, /^guru\d*$/];
@@ -86,15 +86,18 @@ async function fetchTable(sheet: string): Promise<SheetTable> {
 
 function parseEvents(t: SheetTable, eskul: EskulKey): EskulEvent[] {
   const events: EskulEvent[] = [];
+  // The current workbook has one session per row; its program tabs are
+  // formula views of Jadwal Induk, including the actual execution status.
+  const singleSession = t.headers.includes("kelaspeserta") && t.headers.includes("mulai");
   const dateIndex = column(t, DATE, ["berkuda", "taekwondo"].includes(eskul) ? 2 : 1);
-  const weekIndex = column(t, WEEK, 0);
-  const slots = eskul === "panahan" ? [0, 1] : [0];
+  const weekIndex = column(t, WEEK, singleSession ? -1 : 0);
+  const slots = eskul === "panahan" && !singleSession ? [0, 1] : [0];
   for (const [rowIndex, row] of t.rows.entries()) {
     const date = parseDate(row[dateIndex]);
     if (!date) continue;
     const weekNo = clean(row[weekIndex]) ?? "";
     for (const slot of slots) {
-      const classIndex = eskul === "panahan" ? column(t, [new RegExp(`^sesi${slot + 1}kelas$`), new RegExp(`^kelas${slot + 1}$`)], slot ? 6 : 2)
+      const classIndex = singleSession ? column(t, CLASSES, -1) : eskul === "panahan" ? column(t, [new RegExp(`^sesi${slot + 1}kelas$`), new RegExp(`^kelas${slot + 1}$`)], slot ? 6 : 2)
         : column(t, CLASSES, ["berkuda", "taekwondo"].includes(eskul) ? 4 : 2);
       const rawClasses = clean(row[classIndex]);
       if (eskul === "panahan" && !rawClasses) continue;
@@ -102,17 +105,19 @@ function parseEvents(t: SheetTable, eskul: EskulKey): EskulEvent[] {
       const status = clean(row[statusIndex]) ?? "";
       const notes = clean(row[column(t, [/^catatan$/], eskul === "panahan" ? 11 : eskul === "pramuka" ? 5 : eskul === "renang" ? 6 : 7)]);
       const rowKind = clean(row[column(t, [/^jenisbaris$/], -1)]);
-      const explicitTime = clean(row[column(t, eskul === "panahan" ? [new RegExp(`^jamsesi${slot + 1}$`), new RegExp(`^jam${slot + 1}$`)] : [/^waktu$/, /^jam$/], eskul === "panahan" ? (slot ? 7 : 3) : -1)]);
+      const start = singleSession ? clean(row[column(t, [/^mulai$/], -1)]) : undefined;
+      const end = singleSession ? clean(row[column(t, [/^selesai$/], -1)]) : undefined;
+      const explicitTime = singleSession ? [start, end].filter(Boolean).join(" - ") || undefined : clean(row[column(t, eskul === "panahan" ? [new RegExp(`^jamsesi${slot + 1}$`), new RegExp(`^jam${slot + 1}$`)] : [/^waktu$/, /^jam$/], eskul === "panahan" ? (slot ? 7 : 3) : -1)]);
       const fallback = { renang: "Ba'da Ashar", panahan: slot ? "13.00" : "10.00", berkuda: "14.00 (berangkat dari IDN)", taekwondo: "09.00 - 11.00", pramuka: "08.00 - 11.00" }[eskul];
       const time = (explicitTime ?? fallback).replace(/(\d)[,:](\d{2})/g, "$1.$2");
       const classes = extractClasses(rawClasses);
-      const group = clean(row[column(t, [/^angkatan$/, /^jenjang$/], ["berkuda", "taekwondo"].includes(eskul) ? 3 : -1)]);
+      const group = clean(row[column(t, [/^kelompok$/, /^angkatan$/, /^jenjang$/], ["berkuda", "taekwondo"].includes(eskul) ? 3 : -1)]);
       events.push({
-        id: `${eskul}-${date.iso}-${weekNo || rowIndex}-${slot}`,
+        id: singleSession ? `${eskul}-${date.iso}-${encodeURIComponent(time)}-${encodeURIComponent(classes.join("|"))}` : `${eskul}-${date.iso}-${weekNo || rowIndex}-${slot}`,
         eskul, eskulLabel: ESKUL_META[eskul].label, weekNo, date: date.iso, dateLabel: date.label,
         time, classes: classes.length ? classes : rawClasses ? [rawClasses] : [], status, statusNormalized: normalizeStatus(status),
-        teacher: clean(row[column(t, TEACHER, eskul === "panahan" ? (slot ? 8 : 4) : eskul === "renang" ? 3 : -1, slot)]),
-        result: clean(row[column(t, RESULT, eskul === "panahan" ? 10 : eskul === "pramuka" ? 4 : eskul === "renang" ? 5 : 6)]),
+        teacher: clean(row[column(t, TEACHER, singleSession ? -1 : eskul === "panahan" ? (slot ? 8 : 4) : eskul === "renang" ? 3 : -1, slot)]),
+        result: clean(row[column(t, RESULT, singleSession ? -1 : eskul === "panahan" ? 10 : eskul === "pramuka" ? 4 : eskul === "renang" ? 5 : 6)]),
         notes, semester: clean(row[column(t, [/^semester$/], ["berkuda", "taekwondo"].includes(eskul) ? 1 : -1)]),
         extra: [eskul === "panahan" ? `Sesi ${time}` : eskul === "taekwondo" && group ? `Jenjang ${group}` : group, rowKind && rowKind !== "HISTORIS TERKUNCI" && rowKind !== "RENCANA TETAP" ? rowKind : undefined].filter(Boolean).join(" · ") || undefined,
       });

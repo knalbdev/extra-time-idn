@@ -1,6 +1,8 @@
 import { EskulKey, StatusBucket, StatusKey } from "./types";
 
-export const SPREADSHEET_ID = "1-GI5Qt_pDLMV3Gty8Cc2X9u12VY_q9upN_6hr0V-VP8";
+export const SPREADSHEET_ID = "1nDi_YLMmoKWGvUf920GDVsPCIE4J7z_phaxsLwKSu3E";
+
+export const SCHEDULE_CACHE_KEY = `extratime:schedule-cache:v3:${SPREADSHEET_ID}`;
 
 export const SPREADSHEET_URL = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/edit`;
 

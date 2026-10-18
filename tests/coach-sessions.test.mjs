@@ -204,6 +204,47 @@ test('revised spreadsheet preserves history, replacement sessions, combined trip
   } finally { globalThis.fetch = original; }
 });
 
+test('current workbook reads one row per session and agrees with every Jadwal Induk entry', async () => {
+  const { getAllEvents } = load('src/lib/sheets.ts');
+  const { SPREADSHEET_ID } = load('src/lib/constants.ts');
+  const Papa = loadExternal('papaparse');
+  const original = globalThis.fetch;
+  const requested = [];
+  globalThis.fetch = async url => {
+    const source = new URL(url);
+    assert.ok(source.pathname.includes(SPREADSHEET_ID));
+    const name = source.searchParams.get('sheet'); requested.push(name);
+    return new Response(fs.readFileSync(`tests/fixtures/sheets-current-2026-10/${name}.csv`, 'utf8'));
+  };
+  try {
+    const events = await getAllEvents();
+    assert.equal(events.length, 149);
+    assert.equal(new Set(events.map(e => e.id)).size, 149);
+    const counts = Object.fromEntries(['renang','panahan','berkuda','taekwondo','pramuka'].map(key => [key, events.filter(e => e.eskul === key).length]));
+    assert.deepEqual(counts, {renang:46,panahan:50,berkuda:26,taekwondo:13,pramuka:14});
+    const master = Papa.parse(fs.readFileSync('tests/fixtures/sheets-current-2026-10/Jadwal Induk.csv','utf8'), {skipEmptyLines:'greedy'}).data.slice(1);
+    const snapshot = events.map(e => `${e.eskulLabel}|${e.dateLabel}|${e.time}|${e.classes.join(', ')}|${e.status}`).sort();
+    assert.deepEqual(snapshot, master.map(r => `${r[6]}|${r[2]}|${r[4].replace(':','.')} - ${r[5].replace(':','.')}|${r[8]}|${r[9]}`).sort());
+    assert.equal(events.filter(e => e.status === 'Sudah Terlaksana').length, 21);
+    assert.ok(events.every(e => e.teacher === undefined && e.result === undefined && e.weekNo === ''), 'Do not misread other fields as teachers, results or weeks');
+    assert.equal(events.find(e => e.eskul === 'taekwondo' && e.date === '2026-11-07').time, '09.00 - 11.00');
+    const riding = events.find(e => e.eskul === 'berkuda' && e.date === '2026-10-31');
+    assert.deepEqual(riding.classes, ['9A','9B']);
+    assert.equal(riding.time, '14.00 - 17.00');
+    assert.ok(events.find(e => e.eskul === 'pramuka').classes.length === 10);
+    assert.ok(events.filter(e => e.date > '2026-10-18').every(e => e.status === 'Terjadwal'));
+    assert.ok(!requested.includes('Jadwal Gabungan'));
+    assert.equal((await getAllEvents(['renang','panahan','berkuda','taekwondo'])).length, 135);
+    // Reordering rows does not change a session's identity.
+    globalThis.fetch = async url => {
+      const name = new URL(url).searchParams.get('sheet');
+      const rows = Papa.parse(fs.readFileSync(`tests/fixtures/sheets-current-2026-10/${name}.csv`,'utf8'), {skipEmptyLines:'greedy'}).data;
+      return new Response(Papa.unparse([rows[0], ...rows.slice(1).reverse()]));
+    };
+    assert.deepEqual((await getAllEvents()).map(e => e.id).sort(), events.map(e => e.id).sort());
+  } finally { globalThis.fetch = original; }
+});
+
 test('CSV failures are explicit and empty schedules remain empty', async () => {
   const { getAllEvents } = load('src/lib/sheets.ts');
   const original = globalThis.fetch;

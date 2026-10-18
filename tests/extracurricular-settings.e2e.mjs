@@ -41,7 +41,7 @@ try {
   assert.equal(await coach.getByRole('button', { name: 'Pengaturan ekskul', exact: true }).count(), 0);
 
   // Persisted browser cache may include a paused activity; it must never be rendered.
-  await visitor.addInitScript(() => localStorage.setItem('extratime:schedule-cache:v2', JSON.stringify({ events: [{ id: 'old', eskul: 'pramuka', eskulLabel: 'Pramuka', date: '2026-10-18', dateLabel: '18 Okt 2026', classes: ['7A'], time: '08.00', weekNo: '1', status: 'Sudah Terlaksana', statusNormalized: 'selesai' }], fetchedAt: '2026-10-01T00:00:00Z' })));
+  await visitor.addInitScript(() => localStorage.setItem('extratime:schedule-cache:v3:1nDi_YLMmoKWGvUf920GDVsPCIE4J7z_phaxsLwKSu3E', JSON.stringify({ events: [{ id: 'old', eskul: 'pramuka', eskulLabel: 'Pramuka', date: '2026-10-18', dateLabel: '18 Okt 2026', classes: ['7A'], time: '08.00', weekNo: '1', status: 'Sudah Terlaksana', statusNormalized: 'selesai' }], fetchedAt: '2026-10-01T00:00:00Z' })));
   await visitor.goto('http://localhost:3033/');
   assert.equal(await visitor.getByText('Pramuka', { exact: true }).count(), 0);
   await visitor.getByRole('button', { name: /^Lihat Jadwal/ }).first().click();

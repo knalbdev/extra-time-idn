@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useExtracurriculars } from "./ExtracurricularProvider";
 import { isoToday, monthKey, monthLabel } from "@/lib/format";
 import { getAllEvents } from "@/lib/sheets";
+import { SCHEDULE_CACHE_KEY } from "@/lib/constants";
 import { EskulEvent, EskulKey, ScheduleResponse } from "@/lib/types";
 import { CursorGlow } from "./CursorGlow";
 import { DashboardView } from "./DashboardView";
@@ -14,7 +15,7 @@ import { ScheduleView } from "./ScheduleView";
 import { Sidebar, View } from "./Sidebar";
 import { Topbar } from "./Topbar";
 
-const CACHE_KEY = "extratime:schedule-cache:v2";
+const CACHE_KEY = SCHEDULE_CACHE_KEY;
 
 function readCache(): ScheduleResponse | null {
   if (typeof window === "undefined") return null;

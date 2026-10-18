@@ -13,25 +13,26 @@ try {
   page.on('request', request => { if (request.url().startsWith('https://docs.google.com/spreadsheets/')) sheets.add(new URL(request.url()).searchParams.get('sheet')); });
   if (!process.env.LIVE_SHEETS) await page.route('https://docs.google.com/**', async route => {
     const sheet = new URL(route.request().url()).searchParams.get('sheet');
-    return route.fulfill({ contentType: 'text/csv', body: await fs.readFile(`tests/fixtures/sheets-revised-2026-10/${sheet}.csv`, 'utf8') });
+    return route.fulfill({ contentType: 'text/csv', body: await fs.readFile(`tests/fixtures/sheets-current-2026-10/${sheet}.csv`, 'utf8') });
   });
+  await page.addInitScript(() => localStorage.setItem('extratime:schedule-cache:v2', JSON.stringify({events:[{id:'stale-old-source'}],fetchedAt:'2026-01-01'})));
   await page.goto('http://localhost:3033/?view=dashboard', { waitUntil: 'domcontentloaded' });
   await page.waitForFunction(() => {
-    const cache = JSON.parse(localStorage.getItem('extratime:schedule-cache:v2') || 'null');
-    return cache?.events?.length === 140;
+    const cache = JSON.parse(localStorage.getItem('extratime:schedule-cache:v3:1nDi_YLMmoKWGvUf920GDVsPCIE4J7z_phaxsLwKSu3E') || 'null');
+    return cache?.events?.length === 135;
   });
-  const data = await page.evaluate(() => JSON.parse(localStorage.getItem('extratime:schedule-cache:v2')).events);
-  assert.equal(new Set(data.map(event => event.id)).size, 140);
-  assert.equal(data.filter(event => event.eskul === 'panahan' && event.date === '2026-10-24').length, 3);
-  assert.equal(data.find(event => event.eskul === 'taekwondo' && event.weekNo === 'R01').time, '11.30 - 13.30');
-  assert.equal(data.find(event => event.eskul === 'taekwondo' && event.weekNo === 'R02').classes.length, 4);
+  const data = await page.evaluate(() => JSON.parse(localStorage.getItem('extratime:schedule-cache:v3:1nDi_YLMmoKWGvUf920GDVsPCIE4J7z_phaxsLwKSu3E')).events);
+  assert.equal(new Set(data.map(event => event.id)).size, 135);
+  assert.equal(data.filter(event => event.eskul === 'panahan' && event.date === '2026-10-24').length, 2);
+  assert.equal(data.find(event => event.eskul === 'taekwondo' && event.date === '2026-10-24').time, '09.00 - 11.00');
+  assert.equal(data.find(event => event.eskul === 'taekwondo' && event.date === '2026-11-07').classes.length, 4);
   assert.equal(data.filter(event => event.eskul === 'berkuda' && event.date === '2026-10-31').length, 1);
   assert.ok(data.filter(event => event.date > '2026-10-18').every(event => event.statusNormalized === 'terjadwal'));
-  assert.deepEqual([...sheets].sort(), ['Berkuda','Jadwal Gabungan','Panahan','Renang','Taekwondo'].sort());
+  assert.deepEqual([...sheets].sort(), ['Berkuda','Panahan','Renang','Taekwondo'].sort());
   await page.getByRole('button', { name: 'Jadwal', exact: true }).click();
   await page.getByLabel(/^Bulan/).selectOption('2026-11');
   await page.getByLabel(/^Kelas/).selectOption('11 DKV');
-  await page.getByText('11.30 - 13.30', { exact: true }).first().waitFor();
+  await page.getByText('09.00 - 11.00', { exact: true }).first().waitFor();
   await page.getByRole('button', { name: 'Refresh data', exact: true }).click();
   await page.waitForFunction(() => !document.querySelector('button[aria-label="Refresh data"]').disabled);
   await page.setViewportSize({ width: 390, height: 844 });
@@ -51,5 +52,5 @@ try {
   assert.equal(rows.length, 4);
   assert.ok(rows.find(row => row.includes('Renang')).includes('9'));
   assert.deepEqual(errors, []);
-  console.log(`PASS ${process.env.LIVE_SHEETS ? 'live Google CSV with browser CORS' : 'revised CSV snapshot'}: 140 active schedules, unique replacement sessions, combined trips, scoped classes, revised times, filters, refresh, mobile and 20 completed sessions`);
+  console.log(`PASS ${process.env.LIVE_SHEETS ? 'live Google CSV with browser CORS' : 'revised CSV snapshot'}: 135 active schedules, individual Panahan sessions, riding trips, scoped classes, spreadsheet times, filters, refresh, mobile and 20 completed sessions`);
 } finally { await browser.close(); }
