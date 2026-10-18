@@ -12,15 +12,16 @@ export function EskulChip({ eskul }: { eskul: EskulKey }) {
   );
 }
 
-export function StatusChip({ status }: { status: StatusKey }) {
+export function StatusChip({ status, label }: { status: StatusKey; label?: string }) {
   const meta = STATUS_META[status];
   const bucket = STATUS_BUCKET_META[meta.bucket];
   return (
     <span
-      className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-semibold ${bucket.badge}`}
+      aria-label={`Status pelaksanaan: ${label ?? meta.label}`}
+      className={`inline-flex max-w-full items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-semibold ${bucket.badge}`}
     >
       <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${bucket.dot}`} />
-      {meta.label}
+      <span className="min-w-0">{label ?? meta.label}</span>
     </span>
   );
 }

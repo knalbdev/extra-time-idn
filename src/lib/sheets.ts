@@ -57,13 +57,23 @@ function extractClasses(text: string | undefined): string[] {
 }
 
 function normalizeStatus(raw: string | undefined): StatusKey {
-  const s = (raw || "").trim().toLowerCase();
+  const s = (raw || "").trim().toLowerCase().replace(/\s+/g, " ");
   if (!s) return "terjadwal";
-  if (s.includes("sudah")) return "selesai";
-  if (s.includes("belum")) return "belum";
-  if (s.includes("tiada")) return "ditiadakan";
+  if (s.includes("tiada") || s.includes("batal")) return "ditiadakan";
   if (s.includes("libur")) return "libur";
+  if (s.includes("belum")) return "belum";
+  if (/\b(?:sudah|telah) (?:terlaksana|dilaksanakan|selesai)\b|^(?:terlaksana|selesai)$/.test(s)) return "selesai";
   return "terjadwal";
+}
+
+function statusColumn(rows: string[][], fallback: number, occurrence = 0): number {
+  const headers = (rows[0] ?? []).map(value => value.toLowerCase().replace(/[^\p{L}\p{N}]/gu, ""));
+  const named = headers.flatMap((value, index) => /^statuspelaksanaan\d*$/.test(value) ? [index] : []);
+  // Older sheets/fixtures use Status, Status1 and Status2. Prefer the explicit
+  // Status Pelaksanaan columns, even when they are blank or have been moved.
+  if (named.length) return named[occurrence] ?? fallback;
+  const legacy = headers.flatMap((value, index) => /^status\d*$/.test(value) ? [index] : []);
+  return legacy[occurrence] ?? fallback;
 }
 
 function clean(v: string | undefined): string | undefined {
@@ -86,6 +96,7 @@ async function fetchSheetRows(sheetName: string): Promise<string[][]> {
 
 function parseRenang(rows: string[][]): EskulEvent[] {
   const events: EskulEvent[] = [];
+  const status = statusColumn(rows, 4);
   for (const row of rows.slice(1)) {
     const d = parseIndoDate(row[1]);
     if (!d) continue;
@@ -99,8 +110,8 @@ function parseRenang(rows: string[][]): EskulEvent[] {
       dateLabel: d.label,
       time: "Ba'da Ashar",
       classes: classes.length ? classes : row[2] ? [row[2].trim()] : [],
-      status: clean(row[4]) ?? "",
-      statusNormalized: normalizeStatus(row[4]),
+      status: clean(row[status]) ?? "",
+      statusNormalized: normalizeStatus(row[status]),
       teacher: clean(row[3]),
       result: clean(row[5]),
       notes: clean(row[6]),
@@ -128,8 +139,8 @@ function parsePanahan(rows: string[][]): EskulEvent[] {
       guru: number;
       status: number;
     }> = [
-      { suffix: "10", defaultTime: "10.00", kelas: 2, jam: 3, guru: 4, status: 5 },
-      { suffix: "13", defaultTime: "13.00", kelas: 6, jam: 7, guru: 8, status: 9 },
+      { suffix: "10", defaultTime: "10.00", kelas: 2, jam: 3, guru: 4, status: statusColumn(rows, 5, 0) },
+      { suffix: "13", defaultTime: "13.00", kelas: 6, jam: 7, guru: 8, status: statusColumn(rows, 9, 1) },
     ];
     for (const s of sessions) {
       const kelasRaw = row[s.kelas];
@@ -159,6 +170,7 @@ function parsePanahan(rows: string[][]): EskulEvent[] {
 
 function parseBerkuda(rows: string[][]): EskulEvent[] {
   const events: EskulEvent[] = [];
+  const status = statusColumn(rows, 5);
   for (const row of rows.slice(1)) {
     const d = parseIndoDate(row[2]);
     if (!d) continue;
@@ -174,8 +186,8 @@ function parseBerkuda(rows: string[][]): EskulEvent[] {
       time: "14.00 (berangkat dari IDN)",
       extra: clean(row[3]),
       classes: classes.length ? classes : rawClasses ? [rawClasses] : [],
-      status: clean(row[5]) ?? "",
-      statusNormalized: normalizeStatus(row[5]),
+      status: clean(row[status]) ?? "",
+      statusNormalized: normalizeStatus(row[status]),
       semester: clean(row[1]),
       result: clean(row[6]),
       notes: clean(row[7]),
@@ -186,6 +198,7 @@ function parseBerkuda(rows: string[][]): EskulEvent[] {
 
 function parseTaekwondo(rows: string[][]): EskulEvent[] {
   const events: EskulEvent[] = [];
+  const status = statusColumn(rows, 5);
   for (const row of rows.slice(1)) {
     const d = parseIndoDate(row[2]);
     if (!d) continue;
@@ -201,8 +214,8 @@ function parseTaekwondo(rows: string[][]): EskulEvent[] {
       time: "09.00 - 11.00",
       extra: clean(row[3]) ? `Jenjang ${row[3].trim()}` : undefined,
       classes: classes.length ? classes : rawClasses ? [rawClasses] : [],
-      status: clean(row[5]) ?? "",
-      statusNormalized: normalizeStatus(row[5]),
+      status: clean(row[status]) ?? "",
+      statusNormalized: normalizeStatus(row[status]),
       semester: clean(row[1]),
       result: clean(row[6]),
       notes: clean(row[7]),
@@ -213,6 +226,7 @@ function parseTaekwondo(rows: string[][]): EskulEvent[] {
 
 function parsePramuka(rows: string[][]): EskulEvent[] {
   const events: EskulEvent[] = [];
+  const status = statusColumn(rows, 3);
   for (const row of rows.slice(1)) {
     const d = parseIndoDate(row[1]);
     if (!d) continue;
@@ -227,8 +241,8 @@ function parsePramuka(rows: string[][]): EskulEvent[] {
       dateLabel: d.label,
       time: "08.00 - 11.00",
       classes: classes.length ? classes : rawClasses ? [rawClasses] : [],
-      status: clean(row[3]) ?? "",
-      statusNormalized: normalizeStatus(row[3]),
+      status: clean(row[status]) ?? "",
+      statusNormalized: normalizeStatus(row[status]),
       result: clean(row[4]),
       notes: clean(row[5]),
     });

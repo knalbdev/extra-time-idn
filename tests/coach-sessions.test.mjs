@@ -9,7 +9,7 @@ const cache = new Map();
 function load(file) {
   const full = path.resolve(file);
   if (cache.has(full)) return cache.get(full);
-  const source = ts.transpileModule(fs.readFileSync(full, 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
+  const source = ts.transpileModule(fs.readFileSync(full, 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, esModuleInterop: true } }).outputText;
   const mod = { exports: {} };
   new Function('exports', 'module', 'require', source)(mod.exports, mod, id => id.startsWith('.') ? load(path.resolve(path.dirname(full), `${id}.ts`)) : loadExternal(id));
   cache.set(full, mod.exports);
@@ -143,4 +143,25 @@ test('spreadsheet recap uses exact completed status and inclusive dates, countin
   assert.equal(validRecapRange('2026-02-30','2026-03-01'),false);
   assert.equal(validRecapRange('','2026-10-01'),false);
   assert.throws(()=>buildSessionRecap(events,'2026-10-31','2026-10-01','all','now'));
+});
+
+test('schedule reads Status Pelaksanaan by header, including separate Panahan sessions and blank statuses', async () => {
+  const { getAllEvents } = load('src/lib/sheets.ts');
+  const sheets = {
+    Renang: 'Pekan,Tanggal,Kelas,Guru,Status,Hasil,Catatan, Status Pelaksanaan \n1,13 Okt 2026,9A,Coach,Libur,,,Sudah Terlaksana\n2,14 Okt 2026,7A,Coach,Sudah Terlaksana,,,',
+    Panahan: 'Pekan,Tanggal,Kelas1,Jam1,Guru1,Status1,Kelas2,Jam2,Guru2,Status2,Hasil,Catatan,Status Pelaksanaan 1,Status Pelaksanaan 2\n1,15 Okt 2026,7A,10.00,Coach,Libur,7B,13.00,Coach,Sudah Terlaksana,,,Belum Terlaksana,Libur',
+    Berkuda: 'Pekan,Semester,Tanggal,Jenjang,Kelas,Status,Hasil,Catatan,Status Pelaksanaan\n1,1,18 Okt 2026,SMP,8A,Sudah Terlaksana,,,Libur',
+    Taekwondo: 'Pekan,Semester,Tanggal,Jenjang,Kelas,Status,Hasil,Catatan,Status Pelaksanaan\n1,1,18 Okt 2026,SMP,7A,Sudah Terlaksana,,,Sudah dibatalkan',
+    Pramuka: 'Pekan,Tanggal,Kelas,Status,Hasil,Catatan,Status Pelaksanaan\n1,18 Okt 2026,SMP,Sudah Terlaksana,,,Menunggu konfirmasi',
+  };
+  const original = globalThis.fetch;
+  globalThis.fetch = async url => new Response(sheets[new URL(url).searchParams.get('sheet')]);
+  try {
+    const events = await getAllEvents();
+    assert.deepEqual(events.filter(e => e.eskul === 'renang').map(e => [e.status, e.statusNormalized]), [['Sudah Terlaksana', 'selesai'], ['', 'terjadwal']]);
+    assert.deepEqual(events.filter(e => e.eskul === 'panahan').map(e => [e.status, e.statusNormalized]), [['Belum Terlaksana', 'belum'], ['Libur', 'libur']]);
+    assert.equal(events.find(e => e.eskul === 'berkuda').statusNormalized, 'libur');
+    assert.equal(events.find(e => e.eskul === 'taekwondo').statusNormalized, 'ditiadakan', 'Sudah dibatalkan must never become completed');
+    assert.equal(events.find(e => e.eskul === 'pramuka').status, 'Menunggu konfirmasi', 'Keep the original label for statuses outside the common list');
+  } finally { globalThis.fetch = original; }
 });

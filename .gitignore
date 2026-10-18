@@ -13,6 +13,9 @@
 # testing
 /coverage
 
+# Generated coach handouts may contain account passwords.
+/artifacts/panduan-coach/
+
 # next.js
 /.next/
 /out/
