@@ -9,7 +9,7 @@ import { assignmentSchema, loginSchema, meetingSchema, recordSchema } from "@/li
 import type { ActionResult, PortalData } from "@/lib/portal-types";
 
 const denied = "Username atau password tidak sesuai, atau akun tidak memiliki akses ke ruang ini.";
-const failed = "Permintaan belum berhasil. Periksa koneksi, session, dan konfigurasi Supabase.";
+const failed = "Proses belum berhasil. Periksa koneksi dan coba lagi. Jika masih terkendala, hubungi admin.";
 export async function signInAction(input: unknown): Promise<ActionResult> {
   const parsed = loginSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: denied };
@@ -21,7 +21,7 @@ export async function signInAction(input: unknown): Promise<ActionResult> {
     const ip = process.env.VERCEL ? h.get("x-vercel-forwarded-for")?.split(",")[0]?.trim() ?? "shared" : "local-shared";
     const hash = (value: string) => createHash("sha256").update(value).digest("hex");
     const limit = await service.rpc("consume_portal_login", { account_hash: hash(username), client_hash: hash(ip) });
-    if (limit.error) return { ok: false, error: "Login belum siap. Jalankan migration 202610170003_portal_runtime.sql dan periksa konfigurasi server." };
+    if (limit.error) return { ok: false, error: "Login sementara belum tersedia. Silakan hubungi admin dan coba lagi nanti." };
     if (!limit.data) return { ok: false, error: "Terlalu banyak percobaan login. Coba lagi dalam 15 menit." };
     const lookup = await service.from("profiles").select("id,is_active").eq("username", username).maybeSingle();
     let email = "unknown-account@invalid.example";
@@ -50,20 +50,20 @@ export async function signOutAction(): Promise<ActionResult> {
   try {
     const client = await sessionClient();
     const { error } = await client.auth.signOut({ scope: "local" });
-    if (error) return { ok: false, error: "Logout belum berhasil. Coba lagi." };
+    if (error) return { ok: false, error: "Belum berhasil keluar dari akun. Silakan coba lagi." };
     revalidatePath("/coach");
     return { ok: true, data: undefined };
   } catch { return { ok: false, error: failed }; }
 }
 export async function refreshPortalAction(): Promise<ActionResult<PortalData>> {
-  try { const data = await loadPortal(); return data ? { ok: true, data } : { ok: false, error: "Session berakhir atau akun nonaktif. Silakan login kembali." }; }
+  try { const data = await loadPortal(); return data ? { ok: true, data } : { ok: false, error: "Sesi masuk sudah berakhir atau akun tidak aktif. Silakan masuk kembali; hubungi admin jika masih terkendala." }; }
   catch { return { ok: false, error: failed }; }
 }
 async function dataAfterWrite(): Promise<ActionResult<PortalData>> {
   try {
     const data = await loadPortal();
-    return data ? { ok: true, data } : { ok: false, error: "Data tersimpan, tetapi session berakhir. Login kembali untuk memuat hasil." };
-  } catch { return { ok: false, error: "Data tersimpan, tetapi pembaruan tampilan belum berhasil. Gunakan Refresh data sebelum mencoba lagi." }; }
+    return data ? { ok: true, data } : { ok: false, error: "Data berhasil disimpan. Silakan masuk kembali untuk melihat hasilnya." };
+  } catch { return { ok: false, error: "Data berhasil disimpan, tetapi tampilannya belum diperbarui. Klik Refresh data untuk melihat hasilnya sebelum menyimpan ulang." }; }
 }
 export async function saveMeetingAction(input: unknown): Promise<ActionResult<PortalData>> {
   const parsed = meetingSchema.safeParse(input);
@@ -104,7 +104,7 @@ export async function updateCoachAction(input: unknown): Promise<ActionResult<Po
     if (!account || account.profile.role !== "admin") return { ok: false, error: "Akses admin diperlukan." };
     const p = parsed.data;
     const result = await account.client.rpc("update_coach_assignment", { target_id: p.userId, active: p.active, selected_eskuls: p.eskuls, selected_classes: p.classes });
-    if (result.error) return { ok: false, error: "Penugasan belum tersimpan. Pastikan migration runtime sudah dijalankan dan akun target adalah coach." };
+    if (result.error) return { ok: false, error: "Penugasan belum berhasil disimpan. Perbarui data dan coba lagi. Jika masih terkendala, hubungi pengelola akun." };
     return await dataAfterWrite();
   } catch { return { ok: false, error: failed }; }
 }

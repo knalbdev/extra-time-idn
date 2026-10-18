@@ -62,6 +62,8 @@ const server=http.createServer((req,res)=>{
     sql+=` limit ${Math.min(Number(url.searchParams.get('limit')||1000),1000)} offset ${Number(url.searchParams.get('offset')||0)}`;
    }
    const result=await db.query(sql,params);
+   // Match PostgREST's date-only JSON instead of PGlite's JavaScript Date.
+   for (const row of result.rows) if (row.meeting_date instanceof Date) row.meeting_date=row.meeting_date.toISOString().slice(0,10);
    if(req.headers.accept?.includes('application/vnd.pgrst.object+json'))return result.rows.length===1?reply(200,result.rows[0]):reply(406,{code:'PGRST116',message:'Expected one row',details:`${result.rows.length} rows`});
    return reply(200,result.rows);
   }catch(e){console.log('Fixture SQL rejection:',e.code,e.message);return reply(403,{code:e.code||'42501',message:'Fixture database rejected request',details:e.message});}

@@ -33,7 +33,7 @@ Login dibatasi 10 percobaan per username per 15 menit dan 60 per IP per 15 menit
 - `node --test tests/coach-sessions.test.mjs`: model laporan, grade E, data legacy, validasi input server.
 - `supabase/tests/portal-rls.mjs`: initial + runtime migration dan seed, RLS lintas role/kelas/ekskul, grade/attendance, larangan promosi role sendiri, record actor, limiter login, penugasan transaksional. Memakai PGlite sementara; bukan project Supabase asli.
 - `tests/fixtures/mock-supabase.mjs`: adapter protokol Auth/PostgREST lokal dengan database PostgreSQL-compatible untuk tes browser tanpa credential asli. Tidak boleh dideploy.
-- Pengujian jaringan project asli dilakukan read-only: classes, students dan profiles. Login dengan password akun asli belum diuji karena password tidak dibagikan ke agen.
+- Pengujian jaringan project asli dilakukan read-only: classes, students dan profiles. Pengguna sudah mengonfirmasi login admin/coach dan penyimpanan penilaian ke database berhasil; agen tidak memakai password akun asli untuk pengujian.
 
 Untuk tes database lokal tanpa mengubah dependency aplikasi:
 
@@ -58,3 +58,13 @@ NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:3088 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_
 4. Hentikan server pengujian, lalu build ulang tanpa override dummy sebelum menjalankan atau deploy versi biasa. Jangan memasukkan dummy credentials ke Vercel.
 
 Next.js diperbarui ke 16.4.2 untuk advisori keamanan runtime. Audit runtime (`npm audit --omit=dev`) bersih saat verifikasi; audit lengkap masih melaporkan dependency transitif dev ESLint/braces yang belum memiliki perbaikan nonbreaking. Tidak dilakukan downgrade/force fix.
+
+## Pembaruan pengalaman portal
+
+- Pesan proses dan hasil menggunakan bahasa pengguna tanpa menyebut layanan database atau konfigurasi teknis.
+- Login, simpan pertemuan/nilai, refresh, ubah penugasan, dan persiapan laporan/ekspor menggunakan dialog loading di tengah layar. Dialog memblokir interaksi dan Escape selama proses; hasil muncul sebagai notifikasi tetap di bawah layar.
+- Konfirmasi keluar akun dan meninggalkan draft memakai dialog UI dengan fokus awal di Batal. Peringatan menutup tab/reload browser tetap ditangani browser melalui beforeunload.
+- Daftar siswi menampilkan kehadiran, predikat, dan catatan. Hadir hijau, izin kuning, sakit oranye, alpa merah. Tampilan ponsel memakai kartu.
+- Laporan admin berupa presentasi dengan navigasi slide, cover berlogo IDN, ringkasan, rekap per kelas, dan tabel penilaian per pertemuan. Materi/konteks ditulis pada header pertemuan, standar A–E di ringkasan. Catatan panjang berlanjut ke baris/slide berikutnya tanpa dipotong.
+- Cetak/Simpan PDF mencetak semua slide dalam A4 landscape, satu slide per halaman. Ini PDF bergaya presentasi; belum menyediakan file PowerPoint. Ekspor CSV tetap tersedia.
+- Pengujian browser menggunakan data uji lokal, termasuk catatan 2.000 karakter, pemulihan setelah refresh gagal, warna absensi, dialog kustom, layout ponsel, serta jumlah/orientasi halaman PDF dan batas isi terhadap footer.

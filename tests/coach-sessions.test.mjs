@@ -80,3 +80,25 @@ test('server input validation strips forged actor fields and rejects invalid att
   assert.equal(recordSchema.safeParse({ ...base, attendance: 'sakit', grade: 'A' }).success, false);
   assert.equal(recordSchema.safeParse({ ...base, attendance: 'sakit', grade: null }).success, true);
 });
+
+test('slide reports group meeting context and preserve every character of long notes', () => {
+  const { buildReportSlides, splitReportNote } = load('src/lib/report-slides.ts');
+  const longNote = ('Arahan latihan berikutnya: fokus pernapasan.\n\n' + 'Kemajuan '.repeat(25)).repeat(7).slice(0, 2000);
+  const segments = splitReportNote(longNote);
+  assert.ok(segments.length > 1);
+  assert.equal(segments.join(''), longNote);
+  const records = { 'm1|7a-01': { ...record, notes: longNote } };
+  const slides = buildReportSlides([meeting], records, students);
+  assert.deepEqual(slides.slice(0, 2).map(s => s.kind), ['cover', 'overview']);
+  const summary = slides.filter(s => s.kind === 'summary');
+  assert.equal(summary.flatMap(s => s.rows).length, 13);
+  assert.ok(summary.every(s => s.className === '7A' && s.rows.length <= 10));
+  const detail = slides.filter(s => s.kind === 'meeting');
+  assert.ok(detail.length > 2);
+  assert.ok(detail.every(s => s.meeting.id === 'm1' && s.rows.length <= 7));
+  const firstStudent = detail.flatMap(s => s.rows).filter(r => r.student.id === '7a-01');
+  assert.equal(firstStudent.filter(r => !r.continuation).length, 1);
+  assert.equal(firstStudent.map(r => r.notes).join(''), longNote);
+  assert.equal(detail.flatMap(s => s.rows).filter(r => !r.continuation).length, 13);
+  assert.ok(detail.flatMap(s => s.rows).every(r => r.student.className === '7A'));
+});

@@ -11,6 +11,6 @@ export default async function CoachPage() {
   let portal;
   let failed = false;
   try { portal = await loadPortal(); } catch { failed = true; }
-  if (failed) return <CoachGateway enabled error="Data portal belum dapat dimuat. Periksa koneksi dan jalankan migration Supabase yang diperlukan." />;
+  if (failed) return <CoachGateway enabled error="Data portal belum dapat dimuat. Coba muat ulang halaman. Jika masih terkendala, hubungi admin." />;
   return portal ? <CoachPortal key={portal.profile.id} initial={portal} /> : <CoachGateway enabled />;
 }
