@@ -9,7 +9,7 @@ await db.exec(`create role anon;create role authenticated;create role service_ro
 create table auth.users(id uuid primary key,email_confirmed_at timestamptz);
 create function auth.uid() returns uuid language sql stable as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid;$$;
 grant usage on schema auth to authenticated;grant execute on function auth.uid() to authenticated;`);
-for (const name of ['202610170001_initial_portal.sql','202610170002_seed_students.sql','202610170003_portal_runtime.sql']) await db.exec(await fs.readFile(new URL(`../../supabase/migrations/${name}`,import.meta.url),'utf8'));
+for (const name of ['202610170001_initial_portal.sql','202610170002_seed_students.sql','202610170003_portal_runtime.sql','202610180004_extracurricular_visibility.sql']) await db.exec(await fs.readFile(new URL(`../../supabase/migrations/${name}`,import.meta.url),'utf8'));
 const accounts = [
   {id:'00000000-0000-4000-8000-000000000001',username:'admin',email:'admin@example.test',role:'admin'},
   {id:'00000000-0000-4000-8000-000000000002',username:'coach.renang',email:'renang@example.test',role:'coach'},
@@ -23,7 +23,7 @@ for (const a of accounts) {
 const tokens=new Map();
 const user=a=>({id:a.id,email:a.email,aud:'authenticated',role:'authenticated',email_confirmed_at:new Date().toISOString(),created_at:new Date().toISOString(),updated_at:new Date().toISOString(),app_metadata:{provider:'email',providers:['email']},user_metadata:{},identities:[]});
 function token(a){const part=x=>Buffer.from(JSON.stringify(x)).toString('base64url');const raw=part({alg:'HS256',typ:'JWT'})+'.'+part({sub:a.id,aud:'authenticated',role:'authenticated',exp:Math.floor(Date.now()/1000)+3600,iat:Math.floor(Date.now()/1000),email:a.email});const t=raw+'.'+createHmac('sha256','fixture-signing-key').update(raw).digest('base64url');tokens.set(t,a);return t;}
-const tables=new Set(['profiles','assignments','classes','students','meetings','meeting_records']);
+const tables=new Set(['profiles','assignments','classes','extracurriculars','students','meetings','meeting_records']);
 const ident=x=>{if(!/^[a-z_]+$/.test(x))throw Error('invalid identifier');return '"'+x+'"';};
 let tail=Promise.resolve();
 const server=http.createServer((req,res)=>{
@@ -44,7 +44,7 @@ const server=http.createServer((req,res)=>{
   await db.query("select set_config('request.jwt.claim.sub',$1,false)",[a?.id||'']);
   try {
    const rpc=url.pathname.match(/^\/rest\/v1\/rpc\/([a-z_]+)$/);
-   if(rpc){const name=rpc[1];if(!['consume_portal_login','update_coach_assignment'].includes(name))throw Error('Unknown RPC');const keys=Object.keys(body);const args=keys.map((k,i)=>`${ident(k)}=>$${i+1}`);const r=await db.query(`select public.${ident(name)}(${args.join(',')}) as value`,Object.values(body));return reply(200,r.rows[0]?.value??null);}
+   if(rpc){const name=rpc[1];if(name==='get_enabled_extracurriculars'){const r=await db.query('select public.get_enabled_extracurriculars() as value');return reply(200,r.rows.map(row=>row.value));}if(!['consume_portal_login','update_coach_assignment'].includes(name))throw Error('Unknown RPC');const keys=Object.keys(body);const args=keys.map((k,i)=>`${ident(k)}=>$${i+1}`);const r=await db.query(`select public.${ident(name)}(${args.join(',')}) as value`,Object.values(body));return reply(200,r.rows[0]?.value??null);}
    const table=url.pathname.split('/').at(-1);if(!tables.has(table))throw Error('Unknown table');
    const select=(url.searchParams.get('select')||'*').split(',').map(x=>x==='*'?'*':ident(x)).join(',');
    const params=[];const filters=[];

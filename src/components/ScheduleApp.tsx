@@ -2,7 +2,7 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ESKUL_ORDER } from "@/lib/constants";
+import { useExtracurriculars } from "./ExtracurricularProvider";
 import { isoToday, monthKey, monthLabel } from "@/lib/format";
 import { getAllEvents } from "@/lib/sheets";
 import { EskulEvent, EskulKey, ScheduleResponse } from "@/lib/types";
@@ -36,7 +36,10 @@ function writeCache(data: ScheduleResponse) {
 }
 
 export function ScheduleApp({ onGoHome }: { onGoHome?: () => void }) {
-  const [events, setEvents] = useState<EskulEvent[]>([]);
+  const { enabledEskuls, refreshEnabled } = useExtracurriculars();
+  const [rawEvents, setEvents] = useState<EskulEvent[]>([]);
+  const events = useMemo(() => rawEvents.filter(event => enabledEskuls.includes(event.eskul)), [rawEvents, enabledEskuls]);
+  const loadVersion = useRef(0);
   const [fetchedAt, setFetchedAt] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -48,14 +51,17 @@ export function ScheduleApp({ onGoHome }: { onGoHome?: () => void }) {
   const [selectedMonth, setSelectedMonth] = useState(() => monthKey(isoToday()));
   const [selectedClass, setSelectedClass] = useState("all");
   const [activeEskuls, setActiveEskuls] = useState<Set<EskulKey>>(
-    () => new Set(ESKUL_ORDER),
+    () => new Set(enabledEskuls),
   );
 
   const load = useCallback(async () => {
+    const version = ++loadVersion.current;
     setLoading(true);
     setError(null);
     try {
-      const freshEvents = await getAllEvents();
+      const enabled = await refreshEnabled();
+      const freshEvents = await getAllEvents(enabled);
+      if (version !== loadVersion.current) return;
       const data: ScheduleResponse = {
         events: freshEvents,
         fetchedAt: new Date().toISOString(),
@@ -64,11 +70,12 @@ export function ScheduleApp({ onGoHome }: { onGoHome?: () => void }) {
       setFetchedAt(data.fetchedAt);
       writeCache(data);
     } catch (err) {
+      if (version !== loadVersion.current) return;
       setError(err instanceof Error ? err.message : "Gagal memuat data jadwal.");
     } finally {
-      setLoading(false);
+      if (version === loadVersion.current) setLoading(false);
     }
-  }, []);
+  }, [refreshEnabled]);
 
   useEffect(() => {
     // Paint instantly from the last cached fetch (if any) while a fresh
@@ -80,7 +87,7 @@ export function ScheduleApp({ onGoHome }: { onGoHome?: () => void }) {
       setFetchedAt(cached.fetchedAt);
     }
     load();
-  }, [load]);
+  }, [load, enabledEskuls]);
 
   const months: MonthOption[] = useMemo(() => {
     const keys = new Set(events.map((e) => monthKey(e.date)));
@@ -108,6 +115,12 @@ export function ScheduleApp({ onGoHome }: { onGoHome?: () => void }) {
     setCheckedMonthsSignature(monthsSignature);
   }
 
+  const [enabledSignature, setEnabledSignature] = useState(enabledEskuls.join());
+  if (enabledSignature !== enabledEskuls.join()) {
+    setEnabledSignature(enabledEskuls.join());
+    setActiveEskuls(new Set(enabledEskuls));
+  }
+
   const filteredEvents = useMemo(() => {
     return events.filter((e) => {
       if (selectedMonth !== "all" && monthKey(e.date) !== selectedMonth) return false;
@@ -133,8 +146,8 @@ export function ScheduleApp({ onGoHome }: { onGoHome?: () => void }) {
   const clearFilters = useCallback(() => {
     setSelectedMonth("all");
     setSelectedClass("all");
-    setActiveEskuls(new Set(ESKUL_ORDER));
-  }, []);
+    setActiveEskuls(new Set(enabledEskuls));
+  }, [enabledEskuls]);
 
   return (
     <div className="flex min-h-screen bg-surface">

@@ -1,10 +1,11 @@
 "use client";
+import { useExtracurriculars } from "./ExtracurricularProvider";
 
 import { motion } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
 import { useRef } from "react";
-import { ESKUL_META, ESKUL_ORDER } from "@/lib/constants";
+import { ESKUL_META } from "@/lib/constants";
 import { fadeInItem, staggerContainer } from "@/lib/motion";
 import { CursorGlow } from "./CursorGlow";
 import { DocumentationSlider } from "./DocumentationSlider";
@@ -19,6 +20,7 @@ export function LandingPage({
   photos: string[];
   onEnter: () => void;
 }) {
+  const { enabledEskuls } = useExtracurriculars();
   const heroRef = useRef<HTMLElement>(null);
 
   return (
@@ -90,7 +92,7 @@ export function LandingPage({
             transition={{ delay: 0.3, duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
             className="mx-auto mt-4 max-w-xl text-sm text-on-primary/80 sm:text-base"
           >
-            Pantau jadwal Renang, Panahan, Berkuda, Taekwondo, dan Pramuka dalam satu tempat —
+            Pantau jadwal ekstrakurikuler yang sedang aktif dalam satu tempat —
             selalu sinkron dengan data terbaru.
           </motion.p>
 
@@ -115,7 +117,7 @@ export function LandingPage({
             Ekstrakurikuler Kami
           </h2>
           <p className="mt-2 text-sm text-on-surface-variant">
-            Lima kegiatan pilihan untuk mengembangkan minat dan karakter siswa.
+            Kegiatan pilihan untuk mengembangkan minat dan karakter siswa.
           </p>
         </div>
 
@@ -126,7 +128,7 @@ export function LandingPage({
           viewport={{ once: true, margin: "-80px" }}
           className="mt-8 flex flex-wrap items-stretch justify-center gap-3"
         >
-          {ESKUL_ORDER.map((key) => {
+          {enabledEskuls.map((key) => {
             const meta = ESKUL_META[key];
             return (
               <motion.div

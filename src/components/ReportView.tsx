@@ -2,7 +2,7 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import { useMemo, useState } from "react";
-import { ESKUL_META, ESKUL_ORDER } from "@/lib/constants";
+import { ESKUL_META } from "@/lib/constants";
 import {
   formatShortIndo,
   monthKey,
@@ -18,6 +18,7 @@ import { ClassChip, StatusChip } from "./Badges";
 import { EskulIcon } from "./EskulIcon";
 import { PageHeading } from "./PageHeading";
 import { Icon } from "./Icon";
+import { useExtracurriculars } from "./ExtracurricularProvider";
 
 interface EskulReport {
   eskul: EskulKey;
@@ -27,13 +28,13 @@ interface EskulReport {
   events: EskulEvent[];
 }
 
-function buildReports(events: EskulEvent[]): EskulReport[] {
+function buildReports(events: EskulEvent[], enabled: EskulKey[]): EskulReport[] {
   const byEskul = new Map<EskulKey, EskulEvent[]>();
   for (const e of events) {
     if (!byEskul.has(e.eskul)) byEskul.set(e.eskul, []);
     byEskul.get(e.eskul)!.push(e);
   }
-  return ESKUL_ORDER.map((eskul) => {
+  return enabled.map((eskul) => {
     const list = (byEskul.get(eskul) ?? []).slice().sort((a, b) => a.date.localeCompare(b.date));
     const completed = list.filter((e) => e.statusNormalized === "selesai").length;
     return { eskul, label: ESKUL_META[eskul].label, total: list.length, completed, events: list };
@@ -41,6 +42,7 @@ function buildReports(events: EskulEvent[]): EskulReport[] {
 }
 
 export function ReportView({ events }: { events: EskulEvent[] }) {
+  const { enabledEskuls } = useExtracurriculars();
   const months = useMemo(() => {
     const keys = new Set(events.map((e) => monthKey(e.date)));
     return Array.from(keys)
@@ -75,7 +77,7 @@ export function ReportView({ events }: { events: EskulEvent[] }) {
     return list;
   }, [events, selectedMonth, selectedWeek]);
 
-  const reports = useMemo(() => buildReports(scopedEvents), [scopedEvents]);
+  const reports = useMemo(() => buildReports(scopedEvents, enabledEskuls), [scopedEvents, enabledEskuls]);
 
   const totalCompleted = reports.reduce((sum, r) => sum + r.completed, 0);
   const totalScheduled = scopedEvents.length;

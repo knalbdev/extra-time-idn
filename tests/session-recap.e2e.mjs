@@ -30,13 +30,13 @@ try{
   await page.getByLabel('Tanggal akhir rekap',{exact:true}).fill('2026-10-31');
   await page.getByRole('button',{name:'Tampilkan rekap',exact:true}).click();
   await page.getByRole('dialog',{name:'Sedang memuat rekap dari spreadsheet…',exact:true}).waitFor();
-  await page.getByRole('status').filter({hasText:'Terdapat 6 sesi terlaksana'}).waitFor();
+  await page.getByRole('status').filter({hasText:'Terdapat 5 sesi terlaksana'}).waitFor();
   const recap=page.getByRole('region',{name:'Hasil rekap sesi',exact:true});
-  assert.deepEqual(await recap.locator('dd').allTextContents(),['6','4','4']);
-  assert.equal(await recap.locator('tbody tr').count(),5);
+  assert.deepEqual(await recap.locator('dd').allTextContents(),['5','3','3']);
+  assert.equal(await recap.locator('tbody tr').count(),4);
   const rows=await recap.locator('tbody tr').allTextContents();
   assert.ok(rows.find(row=>row.includes('Taekwondo')).includes('0'));
-  assert.equal(requests,5);
+  assert.equal(requests,4);
   const file=page.waitForEvent('download');
   await page.getByRole('button',{name:'Unduh rekap PNG',exact:true}).click();
   const download=await file;await download.saveAs('/tmp/extra-tracker-session-recap.png');

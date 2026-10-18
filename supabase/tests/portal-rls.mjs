@@ -14,7 +14,7 @@ await db.exec(`
   grant usage on schema auth to authenticated;
   grant execute on function auth.uid() to authenticated;
 `);
-for (const file of ['202610170001_initial_portal.sql','202610170002_seed_students.sql','202610170003_portal_runtime.sql']) {
+for (const file of ['202610170001_initial_portal.sql','202610170002_seed_students.sql','202610170003_portal_runtime.sql','202610180004_extracurricular_visibility.sql']) {
   await db.exec(await fs.readFile(new URL(`../migrations/${file}`, import.meta.url), 'utf8'));
 }
 const admin='00000000-0000-0000-0000-000000000001';
@@ -34,6 +34,8 @@ async function count(table) { return Number((await db.query(`select count(*) as 
 async function denied(sql) { await assert.rejects(db.exec(sql)); }
 await db.exec('set role anon');
 await denied('select * from public.students');
+assert.deepEqual((await db.query('select public.get_enabled_extracurriculars() as id')).rows.map(row=>row.id), ['berkuda','panahan','renang','taekwondo']);
+await denied("update public.extracurriculars set is_active=true where id='pramuka'");
 await db.exec('reset role');
 await actor(admin);
 assert.equal(await count('students'),137);
@@ -63,6 +65,26 @@ values ('${meeting}','7a-02','7A','sakit',null)`);
 await denied(`update public.meetings set skill='Mengganti arti nilai' where id='${meeting}'`);
 await db.exec(`update public.meeting_records set notes='Latihan lanjutan', updated_by='${admin}' where meeting_id='${meeting}' and student_id='7a-01'`);
 assert.equal((await db.query('select updated_by from public.meeting_records limit 1')).rows[0].updated_by,coach);
+// A shared pause blocks an already-authenticated coach and preserves historical data.
+await db.exec("update public.extracurriculars set is_active=false where id='renang'");
+assert.equal((await db.query("select is_active from public.extracurriculars where id='renang'")).rows[0].is_active,true,'Coach cannot change activity status');
+await actor(admin);
+await db.exec("update public.extracurriculars set is_active=false where id='renang'");
+assert.equal(await count('meeting_records'),2,'Admin retains historical records while paused');
+assert.equal((await db.query(`select count(*) as n from public.assignments where user_id='${coach}'`)).rows[0].n,1);
+await actor(coach);
+assert.equal(await count('students'),0);
+assert.equal(await count('classes'),0);
+assert.equal(await count('meetings'),0);
+assert.equal(await count('meeting_records'),0);
+await denied(`insert into public.meetings(coach_id,extracurricular_id,class_id,title,meeting_date,period,skill)
+values ('${coach}','renang','7A','Dijeda','2026-10-17','2026-2027-1','Pernapasan')`);
+await denied(`insert into public.meeting_records(meeting_id,student_id,class_id,attendance,grade)
+values ('${meeting}','7a-03','7A','hadir','A')`);
+await actor(admin);
+await db.exec("update public.extracurriculars set is_active=true where id='renang'");
+await actor(coach);
+assert.equal(await count('meeting_records'),2,'Reactivation restores the same records');
 await actor(other);
 assert.equal(await count('meetings'),0);
 assert.equal(await count('meeting_records'),0);
@@ -98,5 +120,5 @@ assert.equal((await db.query("select public.consume_portal_login(repeat('a',64),
 await db.exec('reset role');
 const rls=await db.query(`select tablename from pg_tables where schemaname='public' and not rowsecurity`);
 assert.equal(rls.rows.length,0);
-console.log('PASS: schema + 137 seeds, anonymous denial, admin access, per-class/eskul coach scope, no self-promotion, grade E, attendance constraints, cross-class rejection, immutable meeting context, actor stamp, companion scope, inactive access revoked.');
+console.log('PASS: schema + 137 seeds, anonymous denial, admin access, per-class/eskul coach scope, no self-promotion, grade E, attendance constraints, cross-class rejection, immutable meeting context, actor stamp, companion scope, inactive access revoked, shared extracurricular pause, anonymous safe IDs, coach cannot change status, reactivation retains records.');
 await db.close();

@@ -1,7 +1,8 @@
 "use client";
+import { useExtracurriculars } from "./ExtracurricularProvider";
 
 import { motion } from "framer-motion";
-import { ESKUL_META, ESKUL_ORDER, STATUS_BUCKET_META } from "@/lib/constants";
+import { ESKUL_META, STATUS_BUCKET_META } from "@/lib/constants";
 import { EskulKey, StatusBucket } from "@/lib/types";
 import { AnimatedNumber } from "./AnimatedNumber";
 import { EskulIcon } from "./EskulIcon";
@@ -20,6 +21,7 @@ export function ScheduleControls({
   resultCount: number;
   totalCount: number;
 }) {
+  const { enabledEskuls } = useExtracurriculars();
   return (
     <div className="card overflow-hidden rounded-2xl">
       <div className="flex flex-col gap-4 p-5">
@@ -33,7 +35,7 @@ export function ScheduleControls({
 
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex flex-wrap gap-2">
-            {ESKUL_ORDER.map((key) => {
+            {enabledEskuls.map((key) => {
               const meta = ESKUL_META[key];
               const active = activeEskuls.has(key);
               return (

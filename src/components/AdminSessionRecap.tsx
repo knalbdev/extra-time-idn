@@ -2,31 +2,37 @@
 
 import Image from "next/image";
 import { FormEvent, useState } from "react";
-import { ESKUL_META, ESKUL_ORDER } from "@/lib/constants";
+import { ESKUL_META } from "@/lib/constants";
 import { getAllEvents } from "@/lib/sheets";
 import { buildSessionRecap, RECAP_COLORS, RECAP_COUNT_NOTE, recapDate, recapUpdated, SessionRecap, validRecapRange } from "@/lib/session-recap";
 import type { EskulKey } from "@/lib/types";
 import { action, field, subtle } from "./CoachSessionForms";
+import { useExtracurriculars } from "./ExtracurricularProvider";
 import { usePortalFeedback } from "./PortalFeedback";
 
 function todayInJakarta() { return new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Jakarta",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date()); }
 export function AdminSessionRecap() {
+  const { enabledEskuls, refreshEnabled } = useExtracurriculars();
   const { busy, run, notify } = usePortalFeedback();
   const [from,setFrom]=useState(()=>`${todayInJakarta().slice(0,7)}-01`);
   const [to,setTo]=useState(todayInJakarta);
-  const [eskul,setEskul]=useState<EskulKey|"all">("all");
-  const [recap,setRecap]=useState<SessionRecap|null>(null);
+  const [eskulChoice,setEskul]=useState<EskulKey|"all">("all");
+  const eskul = eskulChoice === "all" || enabledEskuls.includes(eskulChoice) ? eskulChoice : "all";
+  const [snapshot,setSnapshot]=useState<{data: SessionRecap; signature: string}|null>(null);
+  const recap = snapshot?.signature === enabledEskuls.join() ? snapshot.data : null;
   const [error,setError]=useState("");
   const valid=validRecapRange(from,to);
-  function invalidate() {setRecap(null);setError("");}
+  function invalidate() {setSnapshot(null);setError("");}
   function generate(event:FormEvent) {
     event.preventDefault();if(!valid||busy)return;
     void run("Sedang memuat rekap dari spreadsheet…",async()=>{
-      setError("");setRecap(null);
+      setError("");setSnapshot(null);
       try {
-        const events=await getAllEvents();
-        const result=buildSessionRecap(events,from,to,eskul,new Date().toISOString());
-        setRecap(result);
+        const enabled=await refreshEnabled();
+        if (eskul !== "all" && !enabled.includes(eskul)) throw new Error("Ekstrakurikuler tidak aktif");
+        const events=await getAllEvents(enabled);
+        const result=buildSessionRecap(events,from,to,eskul,new Date().toISOString(),enabled);
+        setSnapshot({data:result,signature:enabled.join()});
         notify(result.total?`Rekap berhasil disusun. Terdapat ${result.total} sesi terlaksana pada rentang yang dipilih.`:"Tidak ada sesi berstatus Sudah Terlaksana pada rentang yang dipilih.");
       } catch {
         const message="Data jadwal belum dapat dimuat. Periksa koneksi, lalu pilih Tampilkan rekap untuk mencoba kembali.";
@@ -49,16 +55,16 @@ export function AdminSessionRecap() {
       <fieldset disabled={busy} className="mt-5 grid gap-4 sm:grid-cols-3">
         <label className="text-xs font-semibold">Tanggal mulai rekap<input required type="date" value={from} onChange={event=>{setFrom(event.target.value);invalidate();}} className={field}/></label>
         <label className="text-xs font-semibold">Tanggal akhir rekap<input required type="date" value={to} onChange={event=>{setTo(event.target.value);invalidate();}} className={field}/></label>
-        <label className="text-xs font-semibold">Ekstrakurikuler rekap<select aria-label="Ekstrakurikuler rekap" value={eskul} onChange={event=>{setEskul(event.target.value as EskulKey|"all");invalidate();}} className={field}><option value="all">Semua ekstrakurikuler</option>{ESKUL_ORDER.map(key=><option key={key} value={key}>{ESKUL_META[key].label}</option>)}</select></label>
+        <label className="text-xs font-semibold">Ekstrakurikuler rekap<select aria-label="Ekstrakurikuler rekap" value={eskul} onChange={event=>{setEskul(event.target.value as EskulKey|"all");invalidate();}} className={field}><option value="all">Semua ekstrakurikuler</option>{enabledEskuls.map(key=><option key={key} value={key}>{ESKUL_META[key].label}</option>)}</select></label>
       </fieldset>
       {!valid&&<p role="alert" className="mt-3 text-xs text-rose-700">Isi kedua tanggal. Tanggal akhir harus sama atau setelah tanggal mulai.</p>}
-      <div className="mt-5 flex flex-wrap items-center gap-3"><button disabled={!valid||busy} className={action}>Tampilkan rekap</button><p className="text-xs text-on-surface-variant">Data terbaru dimuat setiap kali rekap ditampilkan.</p></div>
+      <div className="mt-5 flex flex-wrap items-center gap-3"><button disabled={!valid||busy||!enabledEskuls.length} className={action}>Tampilkan rekap</button><p className="text-xs text-on-surface-variant">Data terbaru dimuat setiap kali rekap ditampilkan.</p></div>
       {error&&<p className="mt-4 rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800">{error}</p>}
     </form>
     {recap&&<>
       <div className="flex flex-wrap items-center justify-between gap-3"><p className="text-xs text-on-surface-variant">PNG berukuran 1920 × 1080, siap digunakan dalam laporan atau presentasi.</p><button type="button" disabled={busy} onClick={download} className={subtle}>Unduh rekap PNG</button></div>
       <section aria-label="Hasil rekap sesi" className="min-w-0 overflow-hidden rounded-3xl border border-outline-variant bg-white">
-        <header className="dashboard-hero flex flex-wrap items-start justify-between gap-5 p-6 text-white sm:p-8"><div><p className="text-[10px] font-semibold tracking-widest text-blue-200">IDN AKHWAT · PELAKSANAAN EKSTRAKURIKULER</p><h3 className="mt-3 font-heading text-2xl font-bold sm:text-3xl">Rekap Sesi Terlaksana</h3><p className="mt-3 text-sm">{recapDate(recap.from)} – {recapDate(recap.to)}</p><p className="mt-2 text-xs text-blue-100">{recap.eskul==="all"?"Seluruh ekstrakurikuler":ESKUL_META[recap.eskul].label}</p></div><Image unoptimized src="/idn.png" alt="Logo IDN" width={138} height={64} className="h-16 w-36 rounded-xl bg-white p-2 object-contain"/></header>
+        <header className="dashboard-hero flex flex-wrap items-start justify-between gap-5 p-6 text-white sm:p-8"><div><p className="text-[10px] font-semibold tracking-widest text-blue-200">IDN AKHWAT · PELAKSANAAN EKSTRAKURIKULER</p><h3 className="mt-3 font-heading text-2xl font-bold sm:text-3xl">Rekap Sesi Terlaksana</h3><p className="mt-3 text-sm">{recapDate(recap.from)} – {recapDate(recap.to)}</p><p className="mt-2 text-xs text-blue-100">{recap.eskul==="all"?"Seluruh ekstrakurikuler aktif":ESKUL_META[recap.eskul].label}</p></div><Image unoptimized src="/idn.png" alt="Logo IDN" width={138} height={64} className="h-16 w-36 rounded-xl bg-white p-2 object-contain"/></header>
         <div className="space-y-6 p-5 sm:p-8">
           <dl className="grid gap-3 sm:grid-cols-3">{[{label:"Sesi terlaksana",value:recap.total},{label:"Hari pelaksanaan",value:recap.days},{label:"Ekstrakurikuler terlaksana",value:recap.activeEskuls}].map(item=><div key={item.label} className="rounded-2xl border border-outline-variant bg-surface p-4"><dt className="text-xs text-on-surface-variant">{item.label}</dt><dd className="mt-2 font-heading text-3xl font-bold">{item.value}</dd></div>)}</dl>
           {!recap.total&&<p className="rounded-xl bg-amber-50 p-4 text-sm text-amber-900">Tidak ada sesi berstatus “Sudah Terlaksana” pada rentang ini.</p>}

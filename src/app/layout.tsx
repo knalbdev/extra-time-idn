@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import { Hanken_Grotesk, Inter } from "next/font/google";
 import "./globals.css";
+import { ExtracurricularProvider } from "@/components/ExtracurricularProvider";
+import { readEnabledExtracurriculars } from "@/lib/extracurricular-settings";
+import type { EskulKey } from "@/lib/types";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -17,10 +20,13 @@ const hankenGrotesk = Hanken_Grotesk({
 export const metadata: Metadata = {
   title: "Jadwal Ekstrakurikuler 2026/2027",
   description:
-    "Visualisasi jadwal ekstrakurikuler Renang, Panahan, Berkuda, Taekwondo, dan Pramuka SMP SMK IDN Akhwat, diambil langsung dari Google Sheets.",
+    "Jadwal dan informasi ekstrakurikuler SMP SMK IDN Akhwat.",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default async function RootLayout({ children }: LayoutProps<"/">) {
+  let enabled: EskulKey[] = [];
+  let available = true;
+  try { enabled = await readEnabledExtracurriculars(); } catch { available = false; }
   return (
     <html
       lang="id"
@@ -33,7 +39,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           rel="stylesheet"
         />
       </head>
-      <body className="min-h-full flex flex-col bg-surface">{children}</body>
+      <body className="min-h-full flex flex-col bg-surface"><ExtracurricularProvider initial={enabled} available={available}>{children}</ExtracurricularProvider></body>
     </html>
   );
 }

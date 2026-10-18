@@ -1,6 +1,6 @@
 import Papa from "papaparse";
-import { CLASS_LIST, ESKUL_META, SMK_CLASSES, SMP_CLASSES, SPREADSHEET_ID } from "./constants";
-import { EskulEvent, StatusKey } from "./types";
+import { CLASS_LIST, ESKUL_META, ESKUL_ORDER, SMK_CLASSES, SMP_CLASSES, SPREADSHEET_ID } from "./constants";
+import { EskulEvent, EskulKey, StatusKey } from "./types";
 
 const MONTH_MAP: Record<string, number> = {
   jan: 0,
@@ -236,16 +236,8 @@ function parsePramuka(rows: string[][]): EskulEvent[] {
   return events;
 }
 
-export async function getAllEvents(): Promise<EskulEvent[]> {
-  const [renang, panahan, berkuda, taekwondo, pramuka] = await Promise.all([
-    fetchSheetRows(ESKUL_META.renang.sheet).then(parseRenang),
-    fetchSheetRows(ESKUL_META.panahan.sheet).then(parsePanahan),
-    fetchSheetRows(ESKUL_META.berkuda.sheet).then(parseBerkuda),
-    fetchSheetRows(ESKUL_META.taekwondo.sheet).then(parseTaekwondo),
-    fetchSheetRows(ESKUL_META.pramuka.sheet).then(parsePramuka),
-  ]);
-
-  return [...renang, ...panahan, ...berkuda, ...taekwondo, ...pramuka].sort((a, b) =>
-    a.date === b.date ? a.eskul.localeCompare(b.eskul) : a.date.localeCompare(b.date),
-  );
+export async function getAllEvents(enabled: EskulKey[] = ESKUL_ORDER): Promise<EskulEvent[]> {
+  const parsers = { renang: parseRenang, panahan: parsePanahan, berkuda: parseBerkuda, taekwondo: parseTaekwondo, pramuka: parsePramuka };
+  const groups = await Promise.all(ESKUL_ORDER.filter(key => enabled.includes(key)).map(key => fetchSheetRows(ESKUL_META[key].sheet).then(parsers[key])));
+  return groups.flat().sort((a, b) => a.date === b.date ? a.eskul.localeCompare(b.eskul) : a.date.localeCompare(b.date));
 }

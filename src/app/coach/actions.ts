@@ -7,6 +7,8 @@ import { adminClient, sessionClient } from "@/lib/supabase/server";
 import { currentAccount, loadPortal } from "@/lib/portal-data";
 import { assignmentSchema, loginSchema, meetingSchema, recordSchema } from "@/lib/portal-validation";
 import type { ActionResult, PortalData } from "@/lib/portal-types";
+import { ESKUL_ORDER } from "@/lib/constants";
+import { z } from "zod";
 
 const denied = "Username atau password tidak sesuai, atau akun tidak memiliki akses ke ruang ini.";
 const failed = "Proses belum berhasil. Periksa koneksi dan coba lagi. Jika masih terkendala, hubungi admin.";
@@ -40,6 +42,12 @@ export async function signInAction(input: unknown): Promise<ActionResult> {
     if (allowed && target !== "admin") {
       const scope = await client.from("assignments").select("class_id").eq("user_id", result.data.user.id).eq("extracurricular_id", target).limit(1);
       allowed = !scope.error && Boolean(scope.data?.length);
+      const activity = await client.from("extracurriculars").select("is_active").eq("id", target).maybeSingle();
+      if (allowed && !activity.error && activity.data?.is_active === false) {
+        await client.auth.signOut({ scope: "local" });
+        return { ok: false, error: "Ekstrakurikuler ini sedang dinonaktifkan. Silakan hubungi admin." };
+      }
+      allowed = allowed && !activity.error && activity.data?.is_active === true;
     }
     if (!allowed) { await client.auth.signOut({ scope: "local" }); return { ok: false, error: denied }; }
     revalidatePath("/");
@@ -107,6 +115,20 @@ export async function updateCoachAction(input: unknown): Promise<ActionResult<Po
     const p = parsed.data;
     const result = await account.client.rpc("update_coach_assignment", { target_id: p.userId, active: p.active, selected_eskuls: p.eskuls, selected_classes: p.classes });
     if (result.error) return { ok: false, error: "Penugasan belum berhasil disimpan. Perbarui data dan coba lagi. Jika masih terkendala, hubungi pengelola akun." };
+    return await dataAfterWrite();
+  } catch { return { ok: false, error: failed }; }
+}
+
+export async function updateExtracurricularAction(input: unknown): Promise<ActionResult<PortalData>> {
+  const parsed = z.object({ id: z.enum(ESKUL_ORDER), active: z.boolean() }).safeParse(input);
+  if (!parsed.success) return { ok: false, error: "Pilihan ekstrakurikuler tidak valid." };
+  try {
+    const account = await currentAccount();
+    if (!account || account.profile.role !== "admin") return { ok: false, error: "Akses admin diperlukan." };
+    const result = await account.client.from("extracurriculars").update({ is_active: parsed.data.active }).eq("id", parsed.data.id).select("id").single();
+    if (result.error) return { ok: false, error: "Status ekstrakurikuler belum berhasil disimpan. Silakan coba kembali." };
+    // Public pages and staff workspaces read the same shared setting.
+    revalidatePath("/", "layout");
     return await dataAfterWrite();
   } catch { return { ok: false, error: failed }; }
 }

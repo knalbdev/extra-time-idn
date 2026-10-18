@@ -20,10 +20,10 @@ function validDate(value: string) {
   return /^\d{4}-\d{2}-\d{2}$/.test(value) && Number.isFinite(Date.parse(`${value}T00:00:00Z`)) && new Date(`${value}T00:00:00Z`).toISOString().slice(0,10) === value;
 }
 export function validRecapRange(from: string, to: string) { return validDate(from) && validDate(to) && from <= to; }
-export function buildSessionRecap(events: EskulEvent[], from: string, to: string, eskul: EskulKey | "all", fetchedAt: string): SessionRecap {
+export function buildSessionRecap(events: EskulEvent[], from: string, to: string, eskul: EskulKey | "all", fetchedAt: string, enabled: EskulKey[] = ESKUL_ORDER): SessionRecap {
   if (!validRecapRange(from, to)) throw new Error("Pilih rentang tanggal yang valid.");
-  const completed = events.filter(event => isCompletedSheetSession(event) && event.date >= from && event.date <= to && (eskul === "all" || event.eskul === eskul)).sort((a,b) => a.date.localeCompare(b.date) || a.eskul.localeCompare(b.eskul) || a.time.localeCompare(b.time));
-  const rows = ESKUL_ORDER.filter(key => eskul === "all" || key === eskul).map(key => {
+  const completed = events.filter(event => enabled.includes(event.eskul) && isCompletedSheetSession(event) && event.date >= from && event.date <= to && (eskul === "all" || event.eskul === eskul)).sort((a,b) => a.date.localeCompare(b.date) || a.eskul.localeCompare(b.eskul) || a.time.localeCompare(b.time));
+  const rows = enabled.filter(key => eskul === "all" || key === eskul).map(key => {
     const group = completed.filter(event => event.eskul === key);
     return { eskul: key, label: ESKUL_META[key].label, count: group.length, days: new Set(group.map(event => event.date)).size, lastDate: group.at(-1)?.date ?? null };
   });

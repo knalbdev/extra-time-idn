@@ -9,6 +9,7 @@ export interface PortalData {
   profiles: PortalProfile[];
   coaches: Coach[];
   assignments: Assignment[];
+  extracurriculars: { id: EskulKey; name: string; is_active: boolean }[];
   students: Student[];
   classes: { id: string; level: "SMP" | "SMK" }[];
   sessions: SessionData;

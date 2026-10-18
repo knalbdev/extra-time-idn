@@ -7,6 +7,7 @@ Kode portal kini memakai Supabase Auth dan database. Tidak ada fallback ke passw
 1. Bila secret key pernah terlihat pada chat/screenshot, buat secret key pengganti melalui dashboard Supabase, perbarui `.env.local` dan Vercel, lalu nonaktifkan key lama. Jangan mengubah/membagikan secret key melalui Git atau chat.
 2. Buka SQL Editor Supabase sebagai pemilik database (`postgres`).
 3. Salin SELURUH isi `supabase/migrations/202610170003_portal_runtime.sql`, lalu Run satu kali. Migration ini menambahkan limiter login persisten, RPC penugasan coach yang transaksional, dan memperbaiki SELECT policy agar INSERT ... RETURNING berhasil. Jangan menjalankan ulang migration 001 atau menghapus tabel yang sudah ada.
+   Setelah migration 003, jalankan `supabase/migrations/202610180004_extracurricular_visibility.sql` satu kali untuk pengaturan aktif/nonaktif ekstrakurikuler. Jika 003 sudah pernah berhasil, cukup jalankan file 004 yang baru.
 4. Pastikan environment `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SECRET_KEY` berasal dari project yang sama. Secret key hanya digunakan server untuk lookup username / operasi admin Auth; operasi nilai memakai session pengguna dan RLS.
 5. Restart `npm run dev`. Buka `/coach`, pilih kartu ekskul atau Masuk admin, lalu isi username dari `profiles` dan password akun Auth terkait. Tidak ada registrasi publik.
 6. Uji coach: buat pertemuan untuk salah satu kelas penugasan, pilih siswi, isi absensi dan predikat, simpan, reload. Nilai harus tetap ada.
@@ -89,10 +90,30 @@ PptxGenJS menyertakan import Node khusus ekspor filesystem di samping jalur brow
 
 ## Rekap sesi terlaksana dari spreadsheet (admin)
 
-Menu admin **Rekap sesi** memakai `getAllEvents()` untuk membaca lima tab spreadsheet jadwal yang juga digunakan dashboard. Data pertemuan/penilaian Supabase tidak menjadi sumber perhitungan ini. Pilih tanggal mulai/akhir (keduanya inklusif), pilih semua/satu ekstrakurikuler, lalu **Tampilkan rekap**. Setiap permintaan memuat ulang spreadsheet; tidak memakai cache jadwal browser.
+Menu admin **Rekap sesi** memakai `getAllEvents()` untuk membaca tab spreadsheet ekstrakurikuler aktif yang juga digunakan dashboard. Data pertemuan/penilaian Supabase tidak menjadi sumber perhitungan ini. Pilih tanggal mulai/akhir (keduanya inklusif), pilih semua/satu ekstrakurikuler, lalu **Tampilkan rekap**. Setiap permintaan memuat ulang spreadsheet; tidak memakai cache jadwal browser.
 
 Hanya nilai status **Sudah Terlaksana** yang dihitung, dengan toleransi huruf besar/kecil dan spasi. Status lain, termasuk Belum Terlaksana dan Sudah dibatalkan, tidak dihitung meskipun normalisasi status dashboard dapat berbeda. Satu jadwal dengan beberapa kelas tetap satu sesi. Dua slot Panahan pada hari yang sama tetap dua sesi; jumlah hari dihitung berdasarkan tanggal unik. Rincian jadwal yang dihitung dapat dibuka untuk pengecekan.
 
 Unduhan **rekap PNG** berukuran 1920 × 1080 dan mencantumkan logo IDN, rentang, filter ekstrakurikuler, jumlah sesi/hari, rekap per ekstrakurikuler, sumber, aturan hitung, dan waktu pembaruan WIB. Mengubah filter menghapus hasil sebelumnya agar PNG tidak memakai rentang lama. Jika salah satu tab spreadsheet gagal dimuat, rekap tidak ditampilkan sebagai hasil parsial; admin dapat mencoba kembali. Rekap nol tetap ditampilkan secara eksplisit.
 
 `tests/session-recap.e2e.mjs` menguji CSV spreadsheet dengan dua slot Panahan dan kelas gabungan, filter tanggal/ekskul, angka nol, kegagalan koneksi, ukuran PNG, tampilan ponsel, serta menu yang hanya tersedia pada admin. Tes memakai fixture Supabase untuk akun dan mock CSV; tidak mengubah spreadsheet atau data produksi. Jalankan sebelum tes login yang menonaktifkan coach uji. Tidak ada perubahan schema atau credential tambahan.
+
+## Mengaktifkan atau menjeda ekstrakurikuler
+
+1. Buka Supabase → SQL Editor → New query. Salin seluruh isi `supabase/migrations/202610180004_extracurricular_visibility.sql`, lalu pilih **Run** satu kali. File ini dijalankan setelah 001–003; tidak perlu menjalankan ulang file lama. Kondisi awal: Renang, Panahan, Berkuda, dan Taekwondo aktif; Pramuka nonaktif.
+2. Deploy source terbaru ke Vercel, atau restart server lokal. Environment variable tetap sama.
+3. Masuk sebagai admin → **Pengaturan ekskul**. Gunakan sakelar pada kartu kegiatan, lalu konfirmasi. Status disimpan pada `extracurriculars.is_active` dan berlaku bersama untuk semua pengguna.
+4. Kegiatan nonaktif disembunyikan dari beranda, dashboard, jadwal, filter, ruang coach, pilihan penugasan, laporan penilaian, serta rekap sesi/PNG. Jadwal tetap bersumber dari spreadsheet; tab yang nonaktif tidak dimuat. Jadwal lama di cache browser juga disaring sebelum ditampilkan.
+5. Halaman yang sedang terbuka memeriksa status setiap 30 detik saat terlihat, saat tab mendapat fokus kembali, dan melalui Refresh data. RLS langsung menolak penilaian/pertemuan untuk kegiatan nonaktif meskipun coach masih memiliki sesi login. Login baru ke ruang tersebut ditolak. Admin tetap bisa masuk meskipun semua kegiatan dinonaktifkan.
+6. Mengaktifkan kembali kegiatan menampilkan data sebelumnya. Tidak ada penghapusan atau perubahan jadwal spreadsheet, akun coach, penugasan, maupun nilai. Penugasan kegiatan nonaktif tetap disimpan ketika penugasan lain diedit.
+
+Pengecekan opsional di SQL Editor:
+
+```sql
+select id, name, is_active from public.extracurriculars order by name;
+select public.get_enabled_extracurriculars();
+```
+
+API publik hanya mengembalikan ID kegiatan aktif; akses anonim ke delapan tabel tetap tidak diberikan. Hanya admin yang dapat mengubah status. Jika pengaturan tidak dapat dimuat, jadwal disembunyikan sementara dan pemberitahuan untuk mencoba kembali ditampilkan, agar kegiatan yang sudah dijeda tidak muncul dari data lama. Jalankan migration 004 sebelum deploy: tanpa migration ini, daftar kegiatan dan data portal belum dapat dimuat.
+
+`tests/extracurricular-settings.e2e.mjs` menguji konfirmasi/batal, penyimpanan lintas muat ulang dan pengguna, cache, pengambilan spreadsheet, filter laporan, pause/aktivasi akun coach yang sedang masuk, dan layout ponsel. `supabase/tests/portal-rls.mjs` juga menguji larangan perubahan oleh coach, penolakan penilaian saat dijeda, dan pemulihan data sesudah aktivasi. Keduanya memakai database uji lokal. Jalankan tes browser pengaturan, navigasi, dan rekap sebelum tes login yang menonaktifkan akun coach uji.

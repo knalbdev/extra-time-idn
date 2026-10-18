@@ -10,6 +10,8 @@ import { CoachManagement } from "./CoachManagement";
 import { MeetingForm, StudentMeetingForm, field, subtle } from "./CoachSessionForms";
 import { AdminCoachReporting } from "./AdminCoachReporting";
 import { AdminSessionRecap } from "./AdminSessionRecap";
+import { AdminExtracurricularSettings } from "./AdminExtracurricularSettings";
+import { useExtracurriculars } from "./ExtracurricularProvider";
 import { PageHeading } from "./PageHeading";
 import { AttendanceBadge } from "./AttendanceBadge";
 import { PortalFeedbackProvider, usePortalFeedback } from "./PortalFeedback";
@@ -21,9 +23,10 @@ export function CoachPortal({ initial }: { initial: PortalData }) {
 function PortalWorkspace({ initial }: { initial: PortalData }) {
   const { busy, run, notify, ask } = usePortalFeedback();
   const [portal, setPortal] = useState(initial);
+  const { enabledEskuls, refreshEnabled } = useExtracurriculars();
   const data = portal.sessions;
   const [eskulChoice, setEskulChoice] = useState<EskulKey | undefined>(initial.coaches.find(c => c.id === initial.profile.id)?.eskuls[0]);
-  const [adminTab, setAdminTab] = useState<"management" | "reporting" | "sessions">("management");
+  const [adminTab, setAdminTab] = useState<"management" | "reporting" | "sessions" | "activities">("management");
   const [meetingId, setMeetingId] = useState<string | null>(null);
   const [form, setForm] = useState<"new" | "edit" | null>(null);
   const [studentId, setStudentId] = useState<string | null>(null);
@@ -39,7 +42,15 @@ function PortalWorkspace({ initial }: { initial: PortalData }) {
     return () => window.removeEventListener("beforeunload", handle);
   }, [dirty]);
   const coach = portal.coaches.find(c => c.id === portal.profile.id && c.active);
-  const eskul = coach?.eskuls.includes(eskulChoice!) ? eskulChoice : coach?.eskuls[0];
+  const coachEskuls = coach?.eskuls.filter(key => enabledEskuls.includes(key)) ?? [];
+  const eskul = coachEskuls.includes(eskulChoice!) ? eskulChoice : coachEskuls[0];
+  const [workspaceEskul, setWorkspaceEskul] = useState(eskul);
+  // A pause may change the selected room while a form is open. Do not carry
+  // that draft into another extracurricular or reopen it after reactivation.
+  if (workspaceEskul !== eskul) {
+    setWorkspaceEskul(eskul);
+    setMeetingId(null); setStudentId(null); setForm(null); setDirty(false);
+  }
   const allowedClasses = [...new Set(portal.assignments.filter(a => a.user_id === portal.profile.id && a.extracurricular_id === eskul).map(a => a.class_id))];
   const meetings = data.meetings.filter(m => coach && m.coachId === coach.id && m.eskul === eskul).sort((a,b) => b.date.localeCompare(a.date));
   const meeting = meetings.find(m => m.id === meetingId);
@@ -71,6 +82,7 @@ function PortalWorkspace({ initial }: { initial: PortalData }) {
   }
   function refreshData() {
     void navigate(() => { void run("Sedang memperbarui data…", async () => {
+      await refreshEnabled();
       const result = await refreshPortalAction();
       if (result.ok) { setPortal(result.data); setStudentId(null); setForm(null); notify("Data sudah diperbarui. Kamu sedang melihat catatan terbaru."); } else notify(result.error, "error");
     }); });
@@ -78,8 +90,8 @@ function PortalWorkspace({ initial }: { initial: PortalData }) {
   return <div className="min-h-screen bg-surface text-primary">
     <header className="print-hide sticky top-0 z-30 border-b border-outline-variant bg-white/95 backdrop-blur-xl"><div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-4 sm:px-8"><div className="font-heading text-sm font-bold">IDN Akhwat<span className="mt-1 block text-[10px] font-medium tracking-widest text-on-surface-variant">{portal.profile.role === "admin" ? "ADMIN" : "COACH"} WORKSPACE</span></div><div className="flex flex-wrap gap-2"><button disabled={busy} className={subtle} onClick={refreshData}>Refresh data</button><button disabled={busy} className={subtle} onClick={requestLogout}>Keluar akun</button></div></div></header>
     <main className="mx-auto flex max-w-7xl flex-col gap-6 px-4 py-7 sm:px-8">
-      {coach && coach.eskuls.length > 1 && <div className="print-hide flex flex-wrap gap-2">{coach.eskuls.map(key => <button disabled={busy} key={key} className={subtle} onClick={() => navigate(() => {setEskulChoice(key);setMeetingId(null);setStudentId(null);setForm(null);setLevel("all");setClassName("all");})}>{ESKUL_META[key].label}</button>)}</div>}
-      {portal.profile.role === "admin" ? <><div className="print-hide"><PageHeading eyebrow="ADMINISTRASI" title={adminTab === "sessions" ? "Rekap sesi terlaksana" : adminTab === "reporting" ? "Laporan ekstrakurikuler" : "Manajemen coach"} description="Kelola penugasan coach, susun laporan penilaian, dan rekap pelaksanaan ekstrakurikuler." icon="manage_accounts" /></div><nav aria-label="Menu admin" className="print-hide flex flex-wrap gap-2 border-b border-outline-variant pb-3">{[{ key: "management", label: "Manajemen coach" }, { key: "reporting", label: "Reporting ekskul" }, { key: "sessions", label: "Rekap sesi" }].map(item => <button key={item.key} onClick={() => setAdminTab(item.key as typeof adminTab)} className={`rounded-xl px-4 py-3 text-xs font-semibold ${adminTab === item.key ? "bg-primary text-white" : "bg-white text-on-surface-variant"}`}>{item.label}</button>)}</nav>{adminTab === "sessions" ? <AdminSessionRecap /> : adminTab === "reporting" ? <AdminCoachReporting coaches={portal.coaches} data={data} students={portal.students} /> : <><CoachManagement portal={portal} onSaved={setPortal} /></>}</> : coach && eskul ? <>
+      {coach && coachEskuls.length > 1 && <div className="print-hide flex flex-wrap gap-2">{coachEskuls.map(key => <button disabled={busy} key={key} className={subtle} onClick={() => navigate(() => {setEskulChoice(key);setMeetingId(null);setStudentId(null);setForm(null);setLevel("all");setClassName("all");})}>{ESKUL_META[key].label}</button>)}</div>}
+      {portal.profile.role === "admin" ? <><div className="print-hide"><PageHeading eyebrow="ADMINISTRASI" title={adminTab === "activities" ? "Pengaturan ekstrakurikuler" : adminTab === "sessions" ? "Rekap sesi terlaksana" : adminTab === "reporting" ? "Laporan ekstrakurikuler" : "Manajemen coach"} description="Kelola ekstrakurikuler dan penugasan coach, serta susun laporan penilaian dan pelaksanaan kegiatan." icon="manage_accounts" /></div><nav aria-label="Menu admin" className="print-hide flex flex-wrap gap-2 border-b border-outline-variant pb-3">{[{ key: "management", label: "Manajemen coach" }, { key: "activities", label: "Pengaturan ekskul" }, { key: "reporting", label: "Reporting ekskul" }, { key: "sessions", label: "Rekap sesi" }].map(item => <button key={item.key} onClick={() => setAdminTab(item.key as typeof adminTab)} className={`rounded-xl px-4 py-3 text-xs font-semibold ${adminTab === item.key ? "bg-primary text-white" : "bg-white text-on-surface-variant"}`}>{item.label}</button>)}</nav>{adminTab === "activities" ? <AdminExtracurricularSettings onSaved={setPortal} /> : adminTab === "sessions" ? <AdminSessionRecap /> : adminTab === "reporting" ? <AdminCoachReporting coaches={portal.coaches} data={data} students={portal.students} /> : <><CoachManagement portal={portal} onSaved={setPortal} /></>}</> : coach && eskul ? <>
         <div className="print-hide"><PageHeading eyebrow={`${coachLabel([eskul])} · ${coach.levels.join(" / ")}`} title={`Ruang ${ESKUL_META[eskul].label}`} description="Catat materi latihan, kehadiran, dan predikat A–E untuk setiap proses belajar." icon="sports" /></div>
         {form ? <MeetingForm allowedClasses={allowedClasses} key={form === "edit" ? meetingId : "new"} coach={coach} eskul={eskul} existing={form === "edit" ? meeting : undefined} locked={Boolean(form === "edit" && meeting && Object.keys(data.records).some(k => k.startsWith(`${meeting.id}|`)))} disabled={busy} onDirty={() => setDirty(true)} onSave={saveMeeting} onCancel={() => navigate(() => setForm(null))} /> : meeting ? <>
           <div className="flex flex-wrap items-center justify-between gap-3"><button className={subtle} onClick={() => navigate(() => {setMeetingId(null);setStudentId(null);})}>← Semua pertemuan</button><button className={subtle} onClick={() => navigate(() => setForm("edit"))}>Detail materi</button></div>
@@ -104,7 +116,7 @@ function PortalWorkspace({ initial }: { initial: PortalData }) {
           <div className="grid gap-4 md:grid-cols-2">{visibleMeetings.map(m => {const students=portal.students.filter(s=>s.className===m.className);const done=students.filter(s=>isComplete(m,data.records[recordKey(m.id,s.id)])).length;return <button key={m.id} onClick={() => {setMeetingId(m.id);setStudentId(null);setSearch("");setStatus("all");}} className="card rounded-2xl p-5 text-left transition hover:border-blue-200 hover:shadow-md"><p className="eyebrow">{m.date} · KELAS {m.className}</p><h3 className="mt-3 font-heading text-xl font-bold">{m.title}</h3><p className="mt-2 text-xs text-on-surface-variant">{m.skill}</p><div className="mt-5 h-1.5 overflow-hidden rounded-full bg-surface"><div className="h-full rounded-full bg-emerald-500" style={{width:`${done/students.length*100}%`}} /></div><p className="mt-3 text-xs text-on-surface-variant">{done}/{students.length} siswi selesai · {m.rubric.length === 1 ? "Materi inti" : `${m.rubric.length} kriteria sebelumnya`}</p><p className="mt-4 text-xs font-semibold text-secondary">Buka absensi & penilaian →</p></button>;})}</div>
           {!visibleMeetings.length && <div className="card rounded-2xl p-10 text-center"><h3 className="font-heading text-lg font-bold">Belum ada pertemuan sesuai filter</h3><p className="mt-2 text-xs leading-relaxed text-on-surface-variant">Buat pertemuan pertama, masukkan materi inti, lalu mulai mencatat siswi.</p></div>}
         </>}
-      </> : <div className="card rounded-2xl p-6"><h2 className="font-heading text-xl font-bold">Belum ada ruang coach yang ditugaskan</h2><p className="mt-3 text-sm text-on-surface-variant">Hubungi admin untuk penugasan. Portal pendamping masih dalam pengembangan.</p></div>}
+      </> : <div className="card rounded-2xl p-6"><h2 className="font-heading text-xl font-bold">Ruang coach belum tersedia</h2><p className="mt-3 text-sm text-on-surface-variant">Ekstrakurikuler penugasan Anda mungkin sedang dinonaktifkan atau belum ditentukan. Silakan hubungi admin. Data penilaian sebelumnya tetap tersimpan.</p></div>}
     </main>
   </div>;
 }

@@ -19,13 +19,14 @@ export async function loadPortal(): Promise<PortalData | null> {
   const account = await currentAccount();
   if (!account) return null;
   const { client, profile } = account;
-  if (profile.role === "pendamping") return { profile, profiles: [profile], coaches: [], assignments: [], students: [], classes: [], sessions: { meetings: [], records: {} } };
+  if (profile.role === "pendamping") return { profile, profiles: [profile], coaches: [], assignments: [], extracurriculars: [], students: [], classes: [], sessions: { meetings: [], records: {} } };
   const results = await Promise.all([
     client.from("profiles").select("id,username,role,display_name,is_active").order("username"),
     client.from("assignments").select("user_id,extracurricular_id,class_id"),
     client.from("students").select("id,name,class_id,is_active").order("id"),
     client.from("classes").select("id,level"),
     client.from("meetings").select("id,coach_id,extracurricular_id,class_id,title,meeting_date,period,skill,grade_descriptions").order("meeting_date").order("id"),
+    client.from("extracurriculars").select("id,name,is_active"),
   ]);
   if (results.some(result => result.error)) throw new Error("Data portal belum dapat dimuat. Periksa tabel, RLS, dan penugasan Supabase.");
   const profiles = results[0].data! as PortalProfile[];
@@ -51,7 +52,7 @@ export async function loadPortal(): Promise<PortalData | null> {
     }
   }
   return {
-    profile, profiles, assignments, classes,
+    profile, profiles, assignments, classes, extracurriculars: results[5].data! as PortalData["extracurriculars"],
     students: results[2].data!.map(s => ({ id: s.id, name: s.name, className: s.class_id, level: classLevel.get(s.class_id)! })),
     coaches: profiles.filter(p => p.role === "coach").map(p => {
       const scope = assignments.filter(a => a.user_id === p.id);
