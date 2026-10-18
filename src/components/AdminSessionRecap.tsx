@@ -51,7 +51,7 @@ export function AdminSessionRecap() {
   return <div className="min-w-0 space-y-5">
     <form onSubmit={generate} className="card rounded-2xl p-5 sm:p-6">
       <p className="eyebrow">REKAP PELAKSANAAN</p><h2 className="mt-2 font-heading text-2xl font-bold">Sesi ekstrakurikuler terlaksana</h2>
-      <p className="mt-2 max-w-3xl text-sm leading-relaxed text-on-surface-variant">Rekap diambil dari spreadsheet jadwal dengan status “Sudah Terlaksana”. Pilih rentang tanggal untuk melihat jumlah sesi setiap ekstrakurikuler.</p>
+      <p className="mt-2 max-w-3xl text-sm leading-relaxed text-on-surface-variant">Pilih rentang tanggal untuk melihat jumlah sesi terlaksana beserta rincian kelas, status, tanggal, dan waktu pelaksanaan.</p>
       <fieldset disabled={busy} className="mt-5 grid gap-4 sm:grid-cols-3">
         <label className="text-xs font-semibold">Tanggal mulai rekap<input required type="date" value={from} onChange={event=>{setFrom(event.target.value);invalidate();}} className={field}/></label>
         <label className="text-xs font-semibold">Tanggal akhir rekap<input required type="date" value={to} onChange={event=>{setTo(event.target.value);invalidate();}} className={field}/></label>
@@ -62,7 +62,7 @@ export function AdminSessionRecap() {
       {error&&<p className="mt-4 rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800">{error}</p>}
     </form>
     {recap&&<>
-      <div className="flex flex-wrap items-center justify-between gap-3"><p className="text-xs text-on-surface-variant">PNG berukuran 1920 × 1080, siap digunakan dalam laporan atau presentasi.</p><button type="button" disabled={busy} onClick={download} className={subtle}>Unduh rekap PNG</button></div>
+      <div className="flex flex-wrap items-center justify-between gap-3"><p className="text-xs text-on-surface-variant">Ringkasan dan seluruh rincian sesi disertakan dalam satu PNG. Tinggi gambar mengikuti jumlah sesi.</p><button type="button" disabled={busy} onClick={download} className={subtle}>Unduh rekap PNG</button></div>
       <section aria-label="Hasil rekap sesi" className="min-w-0 overflow-hidden rounded-3xl border border-outline-variant bg-white">
         <header className="dashboard-hero flex flex-wrap items-start justify-between gap-5 p-6 text-white sm:p-8"><div><p className="text-[10px] font-semibold tracking-widest text-blue-200">IDN AKHWAT · PELAKSANAAN EKSTRAKURIKULER</p><h3 className="mt-3 font-heading text-2xl font-bold sm:text-3xl">Rekap Sesi Terlaksana</h3><p className="mt-3 text-sm">{recapDate(recap.from)} – {recapDate(recap.to)}</p><p className="mt-2 text-xs text-blue-100">{recap.eskul==="all"?"Seluruh ekstrakurikuler aktif":ESKUL_META[recap.eskul].label}</p></div><Image unoptimized src="/idn.png" alt="Logo IDN" width={138} height={64} className="h-16 w-36 rounded-xl bg-white p-2 object-contain"/></header>
         <div className="space-y-6 p-5 sm:p-8">
@@ -70,10 +70,17 @@ export function AdminSessionRecap() {
           {!recap.total&&<p className="rounded-xl bg-amber-50 p-4 text-sm text-amber-900">Tidak ada sesi berstatus “Sudah Terlaksana” pada rentang ini.</p>}
           <p className="text-[11px] text-on-surface-variant sm:hidden">Geser tabel ke samping untuk melihat seluruh rekap.</p>
           <div className="max-w-full overflow-x-auto"><table className="w-full min-w-[620px] text-left text-sm"><caption className="sr-only">Jumlah sesi terlaksana dari spreadsheet pada rentang tanggal yang dipilih</caption><thead className="bg-surface text-xs text-on-surface-variant"><tr>{["Ekstrakurikuler","Sesi terlaksana","Hari pelaksanaan","Tanggal terakhir"].map(label=><th key={label} scope="col" className="p-3">{label}</th>)}</tr></thead><tbody>{recap.rows.map(row=><tr key={row.eskul} className="border-b border-outline-variant"><th scope="row" className="p-3 font-semibold"><span className="mr-2 inline-block h-2 w-2 rounded-full" style={{background:RECAP_COLORS[row.eskul]}}/>{row.label}</th><td className="p-3 font-bold">{row.count}</td><td className="p-3">{row.days}</td><td className="p-3">{row.lastDate?recapDate(row.lastDate):"—"}</td></tr>)}</tbody></table></div>
+          {!!recap.total&&<section aria-label="Rincian sesi terlaksana" className="border-t border-outline-variant pt-6">
+            <h4 className="font-heading text-lg font-bold">Rincian pelaksanaan</h4>
+            <p className="mt-1 text-xs text-on-surface-variant">Seluruh sesi pada periode ini, diurutkan berdasarkan tanggal pelaksanaan.</p>
+            <ol className="mt-4 grid gap-3 lg:grid-cols-2">{recap.events.map((event,index)=><li key={event.id} className="min-w-0 rounded-2xl border border-outline-variant bg-surface p-4 sm:p-5">
+              <div className="flex flex-wrap items-center justify-between gap-2"><p className="text-sm font-semibold"><span className="mr-2 text-on-surface-variant">{index+1}.</span>{event.eskulLabel}</p><span className="rounded-full bg-emerald-50 px-3 py-1 text-[11px] font-semibold text-emerald-800">Sudah Terlaksana</span></div>
+              <div className="mt-4 grid gap-3 text-xs leading-relaxed sm:grid-cols-2"><p><span className="block text-on-surface-variant">Tanggal</span><span className="mt-1 block font-medium">{recapDate(event.date)}</span></p><p><span className="block text-on-surface-variant">Jam</span><span className="mt-1 block break-words font-medium">{event.time||"Belum dicantumkan"}</span></p><p className="sm:col-span-2"><span className="block text-on-surface-variant">Kelas peserta</span><span className="mt-1 block break-words font-medium">{event.classes.join(", ")||"Belum dicantumkan"}</span></p></div>
+            </li>)}</ol>
+          </section>}
           <div className="border-t border-outline-variant pt-4 text-xs leading-relaxed text-on-surface-variant"><p className="font-semibold text-primary">Sumber: spreadsheet jadwal · Status: “Sudah Terlaksana”</p><p className="mt-2">{RECAP_COUNT_NOTE}</p><p className="mt-2">Data diperbarui {recapUpdated(recap.fetchedAt)}</p></div>
         </div>
       </section>
-      <details className="card rounded-2xl p-5"><summary className="cursor-pointer text-sm font-semibold">Rincian jadwal yang dihitung ({recap.total} sesi)</summary><div className="mt-4 space-y-3">{recap.events.map((event,index)=><div key={`${event.id}-${index}`} className="rounded-xl border border-outline-variant p-4 text-xs leading-relaxed"><p className="font-semibold">{event.eskulLabel} · {recapDate(event.date)} · {event.time}</p><p className="mt-1 text-on-surface-variant">{event.classes.join(", ")||"Kelas belum dicantumkan"} · {event.status}</p></div>)}{!recap.total&&<p className="text-xs text-on-surface-variant">Tidak ada jadwal yang memenuhi filter.</p>}</div></details>
     </>}
   </div>;
 }

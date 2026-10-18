@@ -14,12 +14,21 @@ try{
   const page=await browser.newPage({viewport:{width:1440,height:1000},reducedMotion:'reduce'});
   page.setDefaultTimeout(15000);
   const errors=[];page.on('pageerror',error=>errors.push(error.message));
-  let requests=0,failNext=false,empty=false;
+  await page.addInitScript(()=>{
+    window.__recapText=[];
+    const fill=CanvasRenderingContext2D.prototype.fillText;
+    CanvasRenderingContext2D.prototype.fillText=function(value,x,y,...args){
+      window.__recapText.push({value:String(value),x,y,width:this.measureText(value).width,height:this.canvas.height});
+      return fill.call(this,value,x,y,...args);
+    };
+  });
+  let requests=0,failNext=false,empty=false,longRecap=false;
   await page.route('https://docs.google.com/**',async route=>{
     requests++;await new Promise(resolve=>setTimeout(resolve,150));
     if(failNext){failNext=false;return route.abort('failed');}
     const sheet=new URL(route.request().url()).searchParams.get('sheet');
-    return route.fulfill({contentType:'text/csv',body:empty?'Header\n':csv[sheet]});
+    const extended='Pekan,Tanggal,Kelas,Guru,Status,Hasil,Catatan\n'+Array.from({length:24},(_,i)=>`${i+1},31 Okt 2026,Semua kelas,Coach,Sudah Terlaksana,,`).join('\n');
+    return route.fulfill({contentType:'text/csv',body:empty?'Header\n':longRecap&&sheet==='Renang'?extended:csv[sheet]});
   });
   async function login(card,username){await page.getByRole('button',{name:card}).click();await page.getByLabel('Username',{exact:true}).fill(username);await page.getByLabel('Password',{exact:true}).fill('Fixture-Password-123!');await page.getByRole('button',{name:'Masuk workspace',exact:true}).click();await page.getByRole('button',{name:'Keluar akun',exact:true}).waitFor();}
   await page.goto('http://localhost:3033/coach',{waitUntil:'domcontentloaded'});
@@ -37,14 +46,27 @@ try{
   const rows=await recap.locator('tbody tr').allTextContents();
   assert.ok(rows.find(row=>row.includes('Taekwondo')).includes('0'));
   assert.equal(requests,4);
+  const details=recap.getByRole('region',{name:'Rincian sesi terlaksana',exact:true});
+  assert.equal(await details.locator('li').count(),5);
+  assert.equal(await details.getByText('Sudah Terlaksana',{exact:true}).count(),5);
+  assert.ok((await details.innerText()).includes('31 Oktober 2026'));
+  assert.ok((await details.innerText()).includes('13.00'));
+  assert.ok((await details.innerText()).includes('7A, 7B, 8A, 8B, 9A, 9B'));
+  assert.equal(await recap.locator('details').count(),0,'Details belong to the main card and do not require expanding');
   const file=page.waitForEvent('download');
   await page.getByRole('button',{name:'Unduh rekap PNG',exact:true}).click();
   const download=await file;await download.saveAs('/tmp/extra-tracker-session-recap.png');
   assert.equal(download.suggestedFilename(),'rekap-sesi-all-2026-10-01-2026-10-31.png');
   const bytes=await fs.readFile('/tmp/extra-tracker-session-recap.png');
   assert.equal(bytes.subarray(0,8).toString('hex'),'89504e470d0a1a0a');
-  assert.equal(bytes.readUInt32BE(16),1920);assert.equal(bytes.readUInt32BE(20),1080);
+  assert.equal(bytes.readUInt32BE(16),1920);assert.ok(bytes.readUInt32BE(20)>1080);
   assert.ok(bytes.length>50000);
+  const drawn=await page.evaluate(()=>window.__recapText);
+  assert.equal(drawn.filter(t=>t.x===1500&&t.value==='Sudah Terlaksana').length,5);
+  assert.ok(drawn.some(t=>t.x===1000&&t.value.includes('7A, 7B')));
+  assert.ok(drawn.some(t=>t.x===734&&t.value==='13.00'));
+  assert.ok(drawn.some(t=>t.x===424&&t.value==='31 Oktober 2026'));
+  assert.ok(drawn.every(t=>t.x+t.width<=1920&&t.y+30<t.height),'All exported text fits inside the image');
   await page.getByRole('status').filter({hasText:'Rekap PNG telah disiapkan'}).waitFor();
   assert.equal(await page.locator('dialog[open]').count(),0);
   assert.notEqual(await page.evaluate(()=>getComputedStyle(document.body).overflowY),'hidden');
@@ -56,6 +78,25 @@ try{
   await page.getByRole('button',{name:'Tampilkan rekap',exact:true}).click();
   await page.getByRole('status').filter({hasText:'Terdapat 2 sesi terlaksana'}).waitFor();
   assert.deepEqual(await recap.locator('dd').allTextContents(),['2','1','1']);
+  // A long recap wraps all classes and exports every row, including the last.
+  await page.getByLabel('Ekstrakurikuler rekap',{exact:true}).selectOption('all');
+  longRecap=true;
+  await page.getByRole('button',{name:'Tampilkan rekap',exact:true}).click();
+  await page.getByRole('status').filter({hasText:'Terdapat 27 sesi terlaksana'}).waitFor();
+  assert.equal(await details.locator('li').count(),27);
+  await page.evaluate(()=>{window.__recapText=[];});
+  const longFile=page.waitForEvent('download');
+  await page.getByRole('button',{name:'Unduh rekap PNG',exact:true}).click();
+  await (await longFile).saveAs('/tmp/extra-tracker-session-recap-long.png');
+  const longBytes=await fs.readFile('/tmp/extra-tracker-session-recap-long.png');
+  assert.ok(longBytes.readUInt32BE(20)>3500);
+  const longDrawn=await page.evaluate(()=>window.__recapText);
+  assert.equal(longDrawn.filter(t=>t.x===1500&&t.value==='Sudah Terlaksana').length,27);
+  assert.ok(longDrawn.some(t=>t.x===92&&t.value==='27'));
+  assert.ok(longDrawn.some(t=>t.x===1000&&t.value.includes('11 DKV')),'All classes, including wrapped last class, are drawn');
+  assert.ok(longDrawn.every(t=>t.x+t.width<=1920&&t.y+30<t.height));
+  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
+  longRecap=false;
   await page.getByLabel('Tanggal akhir rekap',{exact:true}).fill('2026-09-30');
   assert.equal(await page.getByRole('button',{name:'Tampilkan rekap',exact:true}).isDisabled(),true);
   await page.getByLabel('Tanggal akhir rekap',{exact:true}).fill('2026-10-31');
@@ -73,5 +114,5 @@ try{
   await login(/Coach Renang/,'coach.renang');
   assert.equal(await page.getByRole('button',{name:'Rekap sesi',exact:true}).count(),0);
   assert.deepEqual(errors,[]);
-  console.log('PASS spreadsheet-only exact status, inclusive range, two time slots, grouped classes, zero counts, 1920x1080 PNG, mobile, invalid filters, failure recovery, admin-only menu');
+  console.log('PASS complete recap card and PNG: all classes, statuses, dates and times, dynamic height, 27 sessions without clipping, mobile, filters, failure recovery and admin-only access');
 }finally{await browser.close();}
