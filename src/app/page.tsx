@@ -22,7 +22,7 @@ function getDocumentationPhotos(): string[] {
   }
 }
 
-export default async function Home() {
+export default async function Home({ searchParams }: PageProps<"/">) {
   // Signed-in staff return to their workspace, including direct visits and Back.
   // The public schedule remains accessible when authentication is unavailable.
   let account = null;
@@ -31,5 +31,6 @@ export default async function Home() {
   }
   if (account && (account.profile.role === "coach" || account.profile.role === "admin")) redirect("/coach");
   const documentationPhotos = getDocumentationPhotos();
-  return <HomeClient documentationPhotos={documentationPhotos} />;
+  const query = await searchParams;
+  return <HomeClient documentationPhotos={documentationPhotos} showDashboard={query.view === "dashboard"} />;
 }

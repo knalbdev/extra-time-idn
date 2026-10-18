@@ -24,8 +24,8 @@ try {
       await page.waitForFunction(() => window.scrollY > 20);
       await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
     }
-    async function enterFromDashboard() {
-      await page.getByRole('button', { name: /^Lihat Jadwal/ }).first().click();
+    async function enterFromDashboard(alreadyOnDashboard = false) {
+      if (!alreadyOnDashboard) await page.getByRole('button', { name: /^Lihat Jadwal/ }).first().click();
       if (viewport.width < 1024) await page.getByRole('button', { name: 'Buka menu', exact: true }).click();
       await page.getByRole('link', { name: /Portal Coach/ }).click();
       await page.getByRole('button', { name: /Coach Renang/ }).waitFor();
@@ -74,10 +74,15 @@ try {
     await page.getByRole('button', { name: 'Ya, keluar', exact: true }).click();
     await page.getByRole('button', { name: 'Masuk admin', exact: true }).waitFor();
     await idleAndScrollable();
-    await page.getByRole('link', { name: '← Kembali ke beranda', exact: true }).click();
-    await page.getByRole('button', { name: /^Lihat Jadwal/ }).first().waitFor();
-    assert.equal(new URL(page.url()).pathname, '/');
-    await enterFromDashboard();
+    await page.getByRole('link', { name: '← Kembali ke dashboard', exact: true }).click();
+    await page.getByRole('button', { name: 'Refresh data', exact: true }).waitFor();
+    assert.equal(new URL(page.url()).searchParams.get('view'), 'dashboard');
+    assert.equal(await page.getByRole('button', { name: /^Lihat Jadwal/ }).count(), 0);
+    await page.goto('http://localhost:3033/pendamping', { waitUntil: 'domcontentloaded' });
+    await page.getByRole('link', { name: '← Kembali ke dashboard', exact: true }).click();
+    await page.getByRole('button', { name: 'Refresh data', exact: true }).waitFor();
+    assert.equal(new URL(page.url()).searchParams.get('view'), 'dashboard');
+    await enterFromDashboard(true);
     await page.getByRole('button', { name: /Coach Renang/ }).click();
     await page.getByRole('dialog', { name: 'Masuk ruang Renang', exact: true }).waitFor();
     await page.getByRole('button', { name: 'Tutup popup password', exact: true }).click();

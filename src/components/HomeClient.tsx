@@ -1,15 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { LandingPage } from "./LandingPage";
 import { ScheduleApp } from "./ScheduleApp";
 
-export function HomeClient({ documentationPhotos }: { documentationPhotos: string[] }) {
-  const [entered, setEntered] = useState(false);
+export function HomeClient({ documentationPhotos, showDashboard }: { documentationPhotos: string[]; showDashboard: boolean }) {
+  const router = useRouter();
 
-  if (!entered) {
-    return <LandingPage photos={documentationPhotos} onEnter={() => setEntered(true)} />;
+  if (!showDashboard) {
+    return <LandingPage photos={documentationPhotos} onEnter={() => router.push("/?view=dashboard")} />;
   }
 
-  return <ScheduleApp onGoHome={() => setEntered(false)} />;
+  return <ScheduleApp onGoHome={() => router.push("/")} />;
 }
