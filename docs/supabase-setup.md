@@ -103,20 +103,20 @@ Gunakan nama tabel aktual pada migration, bukan nama konseptual pada tabel ringk
 - Tanpa login: tidak membaca data privat siswi, absensi, nilai, atau dokumentasi.
 - Admin: mengelola akun/penugasan dan generate laporan.
 - Coach: membaca/mengisi materi, absensi dan nilai hanya sesuai penugasan.
-- Pendamping: mengunggah dokumentasi sesuai penugasan, tanpa akses menulis nilai.
+- Pendamping: memakai satu akun bersama untuk mengirim nama, sesi, catatan, dan tautan Drive; tanpa akses nilai atau laporan sebelumnya. Aktivasi mengikuti [panduan portal pendamping](portal-pendamping.md).
 
 Data localStorage tidak otomatis masuk Supabase. Migrasi roster dan nilai lama perlu proses impor tersendiri. Jangan mengganti pembatasan akses dengan policy `using (true)` untuk data privat.
 
-## 7. Storage dokumentasi
+## 7. Storage dokumentasi — rancangan lama, tidak diperlukan
 
-Saat siap menyiapkan penyimpanan, buka Storage > New bucket dan beri nama `dokumentasi-eskul`.
+Portal pendamping terbaru menyimpan tautan Google Drive dan tidak membutuhkan bucket Storage. Rancangan berikut hanya berlaku bila kelak dikembangkan unggahan langsung: buka Storage > New bucket dan beri nama `dokumentasi-eskul`.
 
 - Biarkan **Public bucket** nonaktif.
 - Mulai dengan batas ukuran file misalnya 10 MB dan jenis `image/jpeg`, `image/png`, `image/webp`; angka ini usulan awal, bisa disesuaikan.
 - Buat policies yang membatasi upload/read sesuai role dan penugasan. Bucket privat tanpa policy bukan berarti upload langsung berfungsi.
 - Simpan file di Storage, path/metadata-nya di database. Aplikasi nantinya memakai signed URL atau akses terautentikasi untuk menampilkan foto.
 
-Portal Pendamping saat ini masih halaman pengembangan, belum ada fitur upload.
+Portal Pendamping sudah memiliki alur pengiriman tautan dokumentasi setelah migration 005 dan akun bersama diaktifkan; tidak ada unggahan file langsung.
 
 Sumber: https://supabase.com/docs/guides/storage/buckets/creating-buckets
 

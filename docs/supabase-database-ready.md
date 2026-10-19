@@ -98,7 +98,7 @@ Default contoh memberikan akses Renang ke semua 10 kelas. Untuk membatasi hanya 
 
 Run. Ulangi sesuai coach/ekskul: `renang`, `panahan`, `berkuda`, `taekwondo`, `pramuka`. Daftar hasil memperlihatkan username, ekskul, dan kelas penugasan. Tanpa assignments, coach tidak dapat membaca roster atau membuat pertemuan. Penugasan merupakan tambahan, bukan penghapusan penugasan lama.
 
-Pendamping belum wajib dibuat karena portalnya masih pengembangan. Jika nanti diperlukan, buat Auth user, profile role `pendamping` dengan nama aslinya sebagai display_name, lalu siapkan penugasan terpisah. Template penugasan saat ini secara eksplisit hanya menerima role coach.
+Untuk portal pendamping terbaru, jalankan migration 005 setelah 003–004 dan buat **satu akun bersama**, tanpa assignments. Nama dipilih melalui dropdown dan dokumentasi memakai tautan Drive. Ikuti [panduan portal pendamping](portal-pendamping.md); template penugasan di atas tetap khusus coach.
 
 ## 7. Verifikasi seluruh fondasi
 
@@ -114,9 +114,9 @@ Salin `supabase/setup/03_verify_setup.sql` ke query baru dan Run. Expected:
 
 Table Editor mungkin tetap menampilkan status RLS aktif; jangan mematikannya untuk mengatasi hasil query kosong dari aplikasi. Periksa profil, login dan penugasan terlebih dahulu.
 
-## 8. Storage pendamping — opsional untuk tahap ini
+## 8. Storage — rancangan lama, tidak diperlukan portal pendamping
 
-Jika ingin menyiapkan tempat foto lebih dahulu: Storage > New bucket > `dokumentasi-eskul`, dengan Public bucket OFF. Belum ada policies Storage pada migration ini sehingga unggahan dari aplikasi belum diizinkan. Tabel documentation menyiapkan metadata saja. Jangan membuat policy public untuk membuka unggahan sementara.
+Portal pendamping terbaru memakai tautan Google Drive, sehingga langkah Storage berikut tidak diperlukan. Rancangan penyimpanan foto lama, bila suatu saat digunakan: Storage > New bucket > `dokumentasi-eskul`, dengan Public bucket OFF. Belum ada policies Storage pada migration ini sehingga unggahan dari aplikasi belum diizinkan. Tabel documentation menyiapkan metadata saja. Jangan membuat policy public untuk membuka unggahan sementara.
 
 ## 9. Pastikan environment siap, tanpa membagikannya
 

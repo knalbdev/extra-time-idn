@@ -6,7 +6,7 @@ declare
   target_id uuid := 'GANTI_DENGAN_USER_UID_DARI_AUTHENTICATION_USERS';
   desired_username text := 'admin';
   desired_role text := 'admin'; -- admin / coach / pendamping
-  desired_label text := 'Admin'; -- e.g. Coach Renang; personal name only for pendamping
+  desired_label text := 'Admin'; -- e.g. Coach Renang; Akun Pendamping Bersama for the shared companion account
 begin
   if not exists (select 1 from auth.users where id = target_id and email_confirmed_at is not null) then
     raise exception 'Auth user belum ada atau email belum terkonfirmasi. Cek UID dan status user.';

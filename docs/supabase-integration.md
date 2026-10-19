@@ -8,13 +8,13 @@ Kode portal kini memakai Supabase Auth dan database. Tidak ada fallback ke passw
 2. Buka SQL Editor Supabase sebagai pemilik database (`postgres`).
 3. Salin SELURUH isi `supabase/migrations/202610170003_portal_runtime.sql`, lalu Run satu kali. Migration ini menambahkan limiter login persisten, RPC penugasan coach yang transaksional, dan memperbaiki SELECT policy agar INSERT ... RETURNING berhasil. Jangan menjalankan ulang migration 001 atau menghapus tabel yang sudah ada.
    Setelah migration 003, jalankan `supabase/migrations/202610180004_extracurricular_visibility.sql` satu kali untuk pengaturan aktif/nonaktif ekstrakurikuler. Jika 003 sudah pernah berhasil, cukup jalankan file 004 yang baru.
-4. Pastikan environment `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SECRET_KEY` berasal dari project yang sama. Secret key hanya digunakan server untuk lookup username / operasi admin Auth; operasi nilai memakai session pengguna dan RLS.
+4. Pastikan environment `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SECRET_KEY` berasal dari project yang sama. Secret key hanya digunakan server untuk lookup username, operasi Auth, dan pengiriman laporan pendamping yang sudah diverifikasi; operasi nilai dan pembacaan/koreksi laporan admin memakai session pengguna dan RLS.
 5. Restart `npm run dev`. Buka `/coach`, pilih kartu ekskul atau Masuk admin, lalu isi username dari `profiles` dan password akun Auth terkait. Tidak ada registrasi publik.
 6. Uji coach: buat pertemuan untuk salah satu kelas penugasan, pilih siswi, isi absensi dan predikat, simpan, reload. Nilai harus tetap ada.
 7. Uji admin: masuk akun admin, buka Reporting ekskul dan generate laporan. Pada Manajemen coach, pilih Ubah untuk mengganti status aktif serta kelas/ekskul. Kelas yang dipilih diterapkan ke SELURUH ekskul yang dicentang. Akun Auth baru tetap dibuat melalui dashboard Supabase dan template profil; belum ada form provisioning akun baru di web.
 8. Deploy source terbaru ke Vercel; pastikan ketiga environment sudah tersimpan, lalu redeploy. File `.env.local` tidak diunggah ke Git.
 
-Login dibatasi 10 percobaan per username per 15 menit dan 60 per IP per 15 menit pada Vercel. Host lokal/non-Vercel memakai bucket IP bersama. Jika migration runtime belum dipasang, login ditolak dengan pesan konfigurasi; aplikasi tidak beralih ke mode demo.
+Login coach/admin dibatasi 10 percobaan per username per 15 menit dan 60 per IP per 15 menit pada Vercel. Setelah migration 005, akun pendamping aktif mendapat batas 30 per username untuk penggunaan bersama. Host lokal/non-Vercel memakai bucket IP bersama. Jika migration runtime belum dipasang, login ditolak dengan pesan konfigurasi; aplikasi tidak beralih ke mode demo.
 
 ## Perilaku akses
 
@@ -25,7 +25,7 @@ Login dibatasi 10 percobaan per username per 15 menit dan 60 per IP per 15 menit
 - Predikat wajib saat hadir; izin/sakit/alpa tidak memiliki predikat. Belum dicatat tetap berbeda dari alpa.
 - Materi pertemuan dikunci database setelah ada catatan.
 - Admin mengelola penugasan/status dan laporan. Coach tidak mendapat menu laporan atau endpoint mutasi admin yang terotorisasi.
-- Portal pendamping tetap dalam pengembangan, belum menerima login/upload.
+- Portal pendamping memakai satu akun bersama, pilihan 12 nama, sesi spreadsheet, catatan, dan tautan Drive. Aktivasi membutuhkan migration 005 serta satu profil pendamping; ikuti [panduan portal pendamping](portal-pendamping.md). Laporan diperiksa pada menu admin; tidak ada unggahan foto ke website.
 - Tombol Refresh data memuat perubahan perangkat lain. Belum memakai realtime subscriptions.
 - Akun nonaktif kehilangan akses pada pemeriksaan server/RLS berikutnya. Data yang sudah dilihat sebelumnya tidak bisa ditarik kembali dari perangkat pengguna.
 

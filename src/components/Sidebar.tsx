@@ -120,7 +120,7 @@ export function Sidebar({
 
           <Link href="/coach" onNavigate={onClose} className="flex items-center gap-3 rounded-xl border border-white/10 px-4 py-3 text-sm font-medium text-white/80 transition hover:bg-white/10"><Icon name="sports" className="text-xl" />Portal Coach<span className="ml-auto text-[9px] text-white/50">LOGIN</span></Link>
 
-          <Link href="/pendamping" className="flex items-center gap-3 rounded-xl border border-white/10 px-4 py-3 text-sm font-medium text-white/80 transition hover:bg-white/10"><Icon name="photo_library" className="text-xl" /><span>Portal Pendamping<span className="mt-1 block text-[9px] font-normal text-white/50">Dalam pengembangan</span></span></Link>
+          <Link href="/pendamping" className="flex items-center gap-3 rounded-xl border border-white/10 px-4 py-3 text-sm font-medium text-white/80 transition hover:bg-white/10"><Icon name="photo_library" className="text-xl" /><span>Portal Pendamping<span className="mt-1 block text-[9px] font-normal text-white/50">Dokumentasi kegiatan</span></span></Link>
 
           {onGoHome && (
             <motion.button

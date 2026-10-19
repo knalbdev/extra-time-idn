@@ -30,6 +30,7 @@ export default async function Home({ searchParams }: PageProps<"/">) {
     try { account = await currentAccount(); } catch { /* Render the public page without a verified account. */ }
   }
   if (account && (account.profile.role === "coach" || account.profile.role === "admin")) redirect("/coach");
+  if (account?.profile.role === "pendamping") redirect("/pendamping");
   const documentationPhotos = getDocumentationPhotos();
   const query = await searchParams;
   return <HomeClient documentationPhotos={documentationPhotos} showDashboard={query.view === "dashboard"} />;

@@ -38,8 +38,8 @@ export async function signInAction(input: unknown): Promise<ActionResult> {
       return { ok: false, error: denied };
     }
     const account = await currentAccount();
-    let allowed = Boolean(account && (target === "admin" ? account.profile.role === "admin" : account.profile.role === "coach"));
-    if (allowed && target !== "admin") {
+    let allowed = Boolean(account && account.profile.role === (target === "admin" ? "admin" : target === "pendamping" ? "pendamping" : "coach"));
+    if (allowed && target !== "admin" && target !== "pendamping") {
       const scope = await client.from("assignments").select("class_id").eq("user_id", result.data.user.id).eq("extracurricular_id", target).limit(1);
       allowed = !scope.error && Boolean(scope.data?.length);
       const activity = await client.from("extracurriculars").select("is_active").eq("id", target).maybeSingle();
@@ -52,6 +52,7 @@ export async function signInAction(input: unknown): Promise<ActionResult> {
     if (!allowed) { await client.auth.signOut({ scope: "local" }); return { ok: false, error: denied }; }
     revalidatePath("/");
     revalidatePath("/coach");
+    revalidatePath("/pendamping");
     return { ok: true, data: undefined };
   } catch { return { ok: false, error: failed }; }
 }
@@ -62,6 +63,7 @@ export async function signOutAction(): Promise<ActionResult> {
     if (error) return { ok: false, error: "Belum berhasil keluar dari akun. Silakan coba lagi." };
     revalidatePath("/");
     revalidatePath("/coach");
+    revalidatePath("/pendamping");
     return { ok: true, data: undefined };
   } catch { return { ok: false, error: failed }; }
 }

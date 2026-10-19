@@ -25,4 +25,4 @@ export async function proxy(request: NextRequest) {
   try { await supabase.auth.getClaims(); } catch { /* The page verifies the user again and fails closed. */ }
   return next;
 }
-export const config = { matcher: ["/", "/coach/:path*"] };
+export const config = { matcher: ["/", "/coach/:path*", "/pendamping/:path*"] };

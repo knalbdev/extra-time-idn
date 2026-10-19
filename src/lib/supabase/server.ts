@@ -20,7 +20,8 @@ export async function sessionClient() {
     },
   });
 }
-// Only username resolution and privileged Auth provisioning may use this client.
+// Username resolution, Auth provisioning, and companion submission/idempotency
+// checks may use this client. Companion sessions and actors are verified first.
 // Student/meeting/assessment requests must use sessionClient + RLS.
 export function adminClient() {
   if (!hasSupabaseConfig()) throw new Error("Konfigurasi Supabase belum lengkap di server.");
