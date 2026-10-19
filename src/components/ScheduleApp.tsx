@@ -92,29 +92,12 @@ export function ScheduleApp({ onGoHome }: { onGoHome?: () => void }) {
 
   const months: MonthOption[] = useMemo(() => {
     const keys = new Set(events.map((e) => monthKey(e.date)));
+    keys.add(monthKey(isoToday()));
+    if (selectedMonth !== "all") keys.add(selectedMonth);
     return Array.from(keys)
       .sort()
       .map((key) => ({ key, label: monthLabel(key) }));
-  }, [events]);
-
-  // If the default (current) month has no scheduled events in this data set,
-  // fall back to the closest upcoming month instead of showing an empty list.
-  // Adjusted during render (not in an effect), per
-  // https://react.dev/learn/you-might-not-need-an-effect#adjusting-some-state-when-a-prop-changes
-  const monthsSignature = months.map((m) => m.key).join("|");
-  const [checkedMonthsSignature, setCheckedMonthsSignature] = useState("");
-  if (
-    monthsSignature !== checkedMonthsSignature &&
-    months.length > 0 &&
-    selectedMonth !== "all" &&
-    !months.some((m) => m.key === selectedMonth)
-  ) {
-    setCheckedMonthsSignature(monthsSignature);
-    const closest = months.find((m) => m.key >= selectedMonth) ?? months[0];
-    setSelectedMonth(closest.key);
-  } else if (monthsSignature !== checkedMonthsSignature && months.length > 0) {
-    setCheckedMonthsSignature(monthsSignature);
-  }
+  }, [events, selectedMonth]);
 
   const [enabledSignature, setEnabledSignature] = useState(enabledEskuls.join());
   if (enabledSignature !== enabledEskuls.join()) {

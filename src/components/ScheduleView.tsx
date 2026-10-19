@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { STATUS_BUCKET_META, STATUS_META } from "@/lib/constants";
 import { nextUpcomingEvent } from "@/lib/schedule";
 import { EskulEvent, EskulKey, StatusBucket } from "@/lib/types";
@@ -12,6 +12,9 @@ import { ScheduleControls } from "./ScheduleControls";
 import { PageHeading } from "./PageHeading";
 import { Icon } from "./Icon";
 import { ScheduleTable } from "./ScheduleTable";
+import { ScheduleCalendar } from "./ScheduleCalendar";
+import { useJakartaToday } from "./useJakartaToday";
+import { monthLabel } from "@/lib/format";
 
 const BUCKET_ORDER: StatusBucket[] = ["completed", "upcoming", "canceled"];
 
@@ -38,18 +41,23 @@ export function ScheduleView({
   onToggleEskul: (eskul: EskulKey) => void;
   onClearFilters: () => void;
 }) {
-  const next = useMemo(() => nextUpcomingEvent(events), [events]);
+  const today = useJakartaToday();
+  const [display, setDisplay] = useState<"calendar" | "list">("calendar");
+  const calendarMonth = selectedMonth === "all" ? today.slice(0, 7) : selectedMonth;
+  const monthOptions = months.some(month => month.key === calendarMonth) ? months : [...months, { key: calendarMonth, label: monthLabel(calendarMonth) }].sort((a, b) => a.key.localeCompare(b.key));
+  const visibleEvents = useMemo(() => display === "calendar" ? filteredEvents.filter(event => event.date.startsWith(calendarMonth)) : filteredEvents, [display, filteredEvents, calendarMonth]);
+  const next = nextUpcomingEvent(visibleEvents);
 
   const bucketCounts = useMemo(() => {
     const counts = new Map<StatusBucket, number>();
-    for (const e of filteredEvents) {
+    for (const e of visibleEvents) {
       const bucket = STATUS_META[e.statusNormalized].bucket;
       counts.set(bucket, (counts.get(bucket) ?? 0) + 1);
     }
     return counts;
-  }, [filteredEvents]);
+  }, [visibleEvents]);
 
-  const total = filteredEvents.length;
+  const total = visibleEvents.length;
 
   return (
     <div className="flex flex-col gap-6">
@@ -57,11 +65,12 @@ export function ScheduleView({
       <div className="card flex flex-col gap-5 rounded-2xl p-5 sm:flex-row sm:items-center sm:justify-between">
         <div><p className="flex items-center gap-2 text-sm font-semibold text-primary"><Icon name="tune" className="text-lg text-secondary" />Sesuaikan agendamu</p><p className="mt-1 text-xs text-on-surface-variant">Pilih periode dan kelas untuk melihat jadwal yang relevan.</p></div>
         <ScheduleFilters
-          months={months}
-          selectedMonth={selectedMonth}
+          months={monthOptions}
+          selectedMonth={display === "calendar" ? calendarMonth : selectedMonth}
           onMonthChange={onMonthChange}
           selectedClass={selectedClass}
           onClassChange={onClassChange}
+          allowAllMonths={display === "list"}
         />
       </div>
       </PageHeading>
@@ -69,16 +78,18 @@ export function ScheduleView({
       <ScheduleControls
         activeEskuls={activeEskuls}
         onToggleEskul={onToggleEskul}
-        resultCount={filteredEvents.length}
+        resultCount={visibleEvents.length}
         totalCount={events.length}
       />
 
-      <div className="grid grid-cols-1 gap-6 xl:grid-cols-12">
-        <div className="xl:col-span-8">
-          <ScheduleTable events={filteredEvents} onClearFilters={onClearFilters} />
+      <div className="flex flex-wrap items-center justify-between gap-3"><p className="text-xs text-on-surface-variant">{display === "calendar" ? "Lihat sebaran kegiatan dalam kalender bulanan." : "Lihat seluruh rincian kegiatan dalam daftar."}</p><div role="group" aria-label="Tampilan jadwal" className="inline-flex rounded-xl border border-outline-variant bg-white p-1">{[{ key: "calendar", label: "Kalender", icon: "calendar_month" }, { key: "list", label: "Daftar", icon: "format_list_bulleted" }].map(item => <button key={item.key} type="button" aria-pressed={display === item.key} onClick={() => {setDisplay(item.key as typeof display);if(item.key === "calendar" && selectedMonth === "all") onMonthChange(today.slice(0, 7));}} className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 text-xs font-semibold transition ${display === item.key ? "bg-primary text-white" : "text-on-surface-variant hover:bg-surface"}`}><Icon name={item.icon} className="text-lg" />{item.label}</button>)}</div></div>
+
+      <div className="grid min-w-0 grid-cols-1 gap-6 xl:grid-cols-12">
+        <div className={`min-w-0 ${display === "calendar" ? "xl:col-span-12" : "xl:col-span-8"}`}>
+          {display === "calendar" ? <ScheduleCalendar key={calendarMonth} events={visibleEvents} month={calendarMonth} today={today} onMonthChange={onMonthChange} /> : <ScheduleTable events={visibleEvents} onClearFilters={onClearFilters} />}
         </div>
 
-        <div className="flex flex-col gap-6 xl:col-span-4">
+        <div className={display === "calendar" ? "grid min-w-0 gap-6 md:grid-cols-2 xl:col-span-12" : "flex min-w-0 flex-col gap-6 xl:col-span-4"}>
           <NextActivityCard event={next} />
 
           <motion.div

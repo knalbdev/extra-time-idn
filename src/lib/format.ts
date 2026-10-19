@@ -9,9 +9,12 @@ export function parseIso(iso: string): Date {
   return new Date(y, m - 1, d);
 }
 
-export function isoToday(): string {
-  const now = new Date();
-  return dateToIso(now);
+export function isoToday(now: Date = new Date()): string {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Asia/Jakarta", year: "numeric", month: "2-digit", day: "2-digit",
+  }).formatToParts(now);
+  const value = (type: string) => parts.find(part => part.type === type)!.value;
+  return `${value("year")}-${value("month")}-${value("day")}`;
 }
 
 export function dateToIso(d: Date): string {

@@ -17,12 +17,14 @@ export function ScheduleFilters({
   onMonthChange,
   selectedClass,
   onClassChange,
+  allowAllMonths = true,
 }: {
   months: MonthOption[];
   selectedMonth: string;
   onMonthChange: (v: string) => void;
   selectedClass: string;
   onClassChange: (v: string) => void;
+  allowAllMonths?: boolean;
 }) {
   return (
     <div className="grid w-full grid-cols-1 gap-3 sm:w-auto sm:grid-cols-2">
@@ -32,11 +34,12 @@ export function ScheduleFilters({
         </span>
         <div className="relative">
           <select
+            aria-label="Bulan"
             value={selectedMonth}
             onChange={(e) => onMonthChange(e.target.value)}
             className={selectClass}
           >
-            <option value="all">Semua Bulan</option>
+            {allowAllMonths && <option value="all">Semua Bulan</option>}
             {months.map((m) => (
               <option key={m.key} value={m.key}>
                 {m.label}
@@ -56,6 +59,7 @@ export function ScheduleFilters({
         </span>
         <div className="relative">
           <select
+            aria-label="Kelas"
             value={selectedClass}
             onChange={(e) => onClassChange(e.target.value)}
             className={selectClass}

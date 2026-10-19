@@ -33,4 +33,4 @@ export function buildSessionRecap(events: EskulEvent[], from: string, to: string
 }
 export function recapDate(value: string) { return new Date(`${value}T12:00:00+07:00`).toLocaleDateString("id-ID", {day:"numeric",month:"long",year:"numeric",timeZone:"Asia/Jakarta"}); }
 export function recapUpdated(value: string) { return `${new Date(value).toLocaleString("id-ID", {day:"numeric",month:"long",year:"numeric",hour:"2-digit",minute:"2-digit",timeZone:"Asia/Jakarta"})} WIB`; }
-export const RECAP_COLORS: Record<EskulKey,string> = {renang:"#0284c7",panahan:"#d97706",berkuda:"#059669",taekwondo:"#e11d48",pramuka:"#7c3aed"};
+export const RECAP_COLORS: Record<EskulKey,string> = {renang:"#0284c7",panahan:"#d97706",berkuda:"#059669",taekwondo:"#4f46e5",pramuka:"#7c3aed"};

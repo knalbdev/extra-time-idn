@@ -30,6 +30,7 @@ try {
   assert.ok(data.filter(event => event.date > '2026-10-18').every(event => event.statusNormalized === 'terjadwal'));
   assert.deepEqual([...sheets].sort(), ['Berkuda','Panahan','Renang','Taekwondo'].sort());
   await page.getByRole('button', { name: 'Jadwal', exact: true }).click();
+  await page.getByRole('button', { name: 'Daftar', exact: true }).click();
   await page.getByLabel(/^Bulan/).selectOption('2026-11');
   await page.getByLabel(/^Kelas/).selectOption('11 DKV');
   await page.getByText('09.00 - 11.00', { exact: true }).first().waitFor();
