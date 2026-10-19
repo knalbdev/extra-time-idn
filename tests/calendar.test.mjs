@@ -40,3 +40,13 @@ test('today follows midnight in Jakarta rather than the device timezone',()=>{
   assert.equal(isoToday(new Date('2026-10-19T17:00:00Z')),'2026-10-20');
   assert.equal(isoToday(new Date('2026-12-31T17:00:00Z')),'2027-01-01');
 });
+
+test('dashboard next activity skips completed/canceled sessions and orders same-day times',()=>{
+  const {nextUpcomingEvent}=load('src/lib/schedule.ts');
+  const make=(id,date,time,statusNormalized='terjadwal')=>({id,date,time,statusNormalized});
+  const today='2026-10-19';
+  const events=[make('tomorrow','2026-10-20','09.00'),make('afternoon',today,'14.00'),make('complete',today,'08.00','selesai'),make('holiday',today,'08.00','libur'),make('canceled',today,'08.00','ditiadakan'),make('yesterday','2026-10-18','09.00'),make('morning',today,'09.00')];
+  assert.equal(nextUpcomingEvent(events,today).id,'morning');
+  assert.equal(nextUpcomingEvent(events.filter(e=>['complete','canceled','holiday','yesterday'].includes(e.id)),today),null);
+  assert.equal(nextUpcomingEvent(events,'2026-10-20').id,'tomorrow');
+});

@@ -20,9 +20,11 @@ function defaultExpandedMonth(keys: string[]): Set<string> {
 export function ScheduleTable({
   events,
   onClearFilters,
+  embedded = false,
 }: {
   events: EskulEvent[];
   onClearFilters: () => void;
+  embedded?: boolean;
 }) {
   const groups = useMemo(() => {
     const byMonth = new Map<string, EskulEvent[]>();
@@ -91,7 +93,7 @@ export function ScheduleTable({
   const allOpen = groups.length > 0 && groups.every((g) => expanded.has(g.key));
 
   return (
-    <section className="card overflow-hidden rounded-2xl">
+    <section className={embedded ? "overflow-hidden" : "card overflow-hidden rounded-2xl"}>
       <div className="flex items-center justify-between gap-3 border-b border-outline-variant/40 px-5 py-5">
         <div><p className="eyebrow">AGENDA LENGKAP</p><h2 className="mt-1 text-xl font-heading font-bold text-primary">Jadwal terperinci</h2></div>
         <motion.button

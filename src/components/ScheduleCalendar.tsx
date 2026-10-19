@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useId, useMemo, useState } from "react";
+import { useCallback, useId, useMemo, useState, type ReactNode } from "react";
 import { ESKUL_META, STATUS_BUCKET_META, STATUS_META } from "@/lib/constants";
 import { calendarMonthWeeks, shiftCalendarMonth } from "@/lib/calendar";
 import { formatLongIndo, monthLabel, summarizeClasses } from "@/lib/format";
@@ -15,11 +15,14 @@ const clockMinutes = (time: string) => {
 };
 const navButton = "inline-flex h-10 items-center justify-center rounded-xl border border-outline-variant bg-white px-3 text-xs font-semibold text-primary transition hover:bg-blue-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary";
 
-export function ScheduleCalendar({ events, month, today, onMonthChange }: {
+export function ScheduleCalendar({ events, month, today, onMonthChange, headerControls, filters, summary }: {
   events: EskulEvent[];
   month: string;
   today: string;
   onMonthChange: (month: string) => void;
+  headerControls?: ReactNode;
+  filters?: ReactNode;
+  summary?: ReactNode;
 }) {
   const weeks = useMemo(() => calendarMonthWeeks(month), [month]);
   const byDate = useMemo(() => {
@@ -40,14 +43,19 @@ export function ScheduleCalendar({ events, month, today, onMonthChange }: {
   const monthCount = events.filter(event => event.date.startsWith(month)).length;
 
   return <section aria-label="Kalender jadwal" className="card min-w-0 overflow-hidden rounded-3xl">
-    <header className="flex flex-wrap items-center justify-between gap-4 border-b border-outline-variant/50 p-4 sm:px-6 sm:py-5">
+    <header className="flex flex-wrap items-end justify-between gap-4 border-b border-outline-variant/50 p-4 sm:px-6 sm:py-5">
       <div><p className="eyebrow">Kalender Ekstrakurikuler</p><h2 className="mt-1 font-heading text-2xl font-bold text-primary">{monthLabel(month)}</h2><p className="mt-1 text-xs text-on-surface-variant">{monthCount} kegiatan · Pilih tanggal untuk melihat rincian</p></div>
-      <div className="flex items-center gap-2">
+      <div className="flex w-full flex-wrap items-end gap-3 sm:w-auto">
+        {headerControls}
+        <div className="flex items-center gap-2">
         <button type="button" className={navButton} aria-label="Bulan sebelumnya" onClick={() => onMonthChange(shiftCalendarMonth(month, -1))}><Icon name="chevron_left" className="text-xl" /></button>
         <button type="button" className={navButton} onClick={() => { setPopover(null); setChosenDate(today); onMonthChange(today.slice(0, 7)); }}>Hari ini</button>
         <button type="button" className={navButton} aria-label="Bulan berikutnya" onClick={() => onMonthChange(shiftCalendarMonth(month, 1))}><Icon name="chevron_right" className="text-xl" /></button>
+        </div>
       </div>
     </header>
+
+    {filters && <div className="border-b border-outline-variant/50 px-4 py-4 sm:px-6">{filters}</div>}
 
     <div className="flex flex-wrap items-center justify-between gap-3 bg-blue-50/40 px-4 py-3 sm:px-6">
       <p className="flex items-center gap-2 text-xs font-medium text-primary"><span className="h-2 w-2 shrink-0 rounded-full bg-secondary" />Hari ini · {formatLongIndo(today)} · WIB</p>
@@ -76,6 +84,8 @@ export function ScheduleCalendar({ events, month, today, onMonthChange }: {
         </td>;
       })}</tr>)}</tbody>
     </table>
+
+    {summary && <div className="border-t border-outline-variant/50 bg-surface/30 p-4 sm:p-6">{summary}</div>}
 
     {popover && <CalendarDayPopover key={popover.date} id={popoverId} selection={popover} events={byDate.get(popover.date) ?? []} onDismiss={dismissPopover} />}
   </section>;

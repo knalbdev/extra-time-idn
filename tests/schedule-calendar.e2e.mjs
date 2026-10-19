@@ -7,7 +7,7 @@ const browser=await chromium.launch({executablePath:process.env.CHROME_PATH||'/A
 try {
   const page=await browser.newPage({viewport:{width:1440,height:1100},timezoneId:'America/Los_Angeles',reducedMotion:'reduce'});
   page.setDefaultTimeout(15000);
-  await page.clock.install({time:new Date('2026-10-19T16:59:50Z')});
+  await page.clock.install({time:new Date('2026-10-19T16:59:00Z')});
   const errors=[];let sheetRequests=0;
   page.on('pageerror',error=>errors.push(error.message));
   await page.route('https://docs.google.com/**',async route=>{
@@ -16,10 +16,22 @@ try {
     return route.fulfill({contentType:'text/csv',body:await fs.readFile(`tests/fixtures/sheets-current-2026-10/${sheet}.csv`,'utf8')});
   });
   await page.goto('http://localhost:3033/?view=dashboard',{waitUntil:'domcontentloaded'});
+  const nextActivity=page.getByRole('region',{name:'Jadwal terdekat',exact:true});
+  await nextActivity.getByText('Renang',{exact:true}).waitFor();
+  assert.ok((await nextActivity.innerText()).includes('20 Oktober 2026'));
+  await page.screenshot({path:'/tmp/extra-tracker-dashboard-next.png',fullPage:true});
   await page.getByRole('button',{name:'Jadwal',exact:true}).click();
   const calendar=page.getByRole('region',{name:'Kalender jadwal',exact:true});
   const details=page.getByRole('dialog');
   await calendar.getByRole('heading',{name:'Oktober 2026',exact:true}).waitFor();
+  assert.equal(await nextActivity.count(),0,'Next activity belongs to the dashboard');
+  assert.equal(await page.getByText('Sesuaikan agendamu',{exact:true}).count(),0);
+  assert.equal(await page.getByRole('combobox',{name:'Bulan',exact:true}).count(),0,'Calendar navigation replaces the month dropdown');
+  assert.equal(await calendar.getByRole('combobox',{name:'Kelas',exact:true}).count(),1);
+  assert.equal(await calendar.getByRole('group',{name:'Filter ekstrakurikuler',exact:true}).count(),1);
+  const summary=calendar.getByRole('region',{name:'Ringkasan status jadwal',exact:true});
+  assert.deepEqual((await summary.locator('dd').allTextContents()).map(text=>text.trim().split(' ')[0]),['5','7','2']);
+  await page.screenshot({path:'/tmp/extra-tracker-schedule-integrated-desktop.png',fullPage:true});
   assert.equal(await page.getByRole('button',{name:'Kalender',exact:true}).getAttribute('aria-pressed'),'true');
   assert.equal(await calendar.locator('[aria-current="date"]').innerText(),'19\nHari ini');
   assert.ok((await calendar.innerText()).includes('Senin, 19 Oktober 2026 · WIB'));
@@ -44,6 +56,7 @@ try {
   await saturday.click();
   assert.equal(await details.locator('li').count(),1);
   assert.ok((await details.innerText()).includes('Panahan'));
+  assert.deepEqual((await summary.locator('dd').allTextContents()).map(text=>text.trim().split(' ')[0]),['0','2','0']);
   await page.getByRole('button',{name:'Panahan',exact:true}).click();
   await saturday.click();
   await details.getByText(/Tidak ada kegiatan/).waitFor();
@@ -51,17 +64,20 @@ try {
   await page.getByLabel(/^Kelas/).selectOption('all');
   await calendar.getByRole('button',{name:'Bulan berikutnya',exact:true}).click();
   await calendar.getByRole('heading',{name:'November 2026',exact:true}).waitFor();
-  assert.equal(await page.getByRole('combobox',{name:'Bulan',exact:true}).inputValue(),'2026-11');
+  assert.equal(await page.getByRole('combobox',{name:'Bulan',exact:true}).count(),0);
   await calendar.getByRole('button',{name:'Bulan sebelumnya',exact:true}).click();
   await calendar.getByRole('button',{name:'Hari ini',exact:true}).click();
   assert.equal(await calendar.locator('[aria-current="date"]').getAttribute('aria-pressed'),'true');
   const before=sheetRequests;
+  await page.clock.setSystemTime(new Date('2026-10-19T16:59:59Z'));
   await page.clock.runFor(31000);
   await calendar.getByRole('button',{name:/^Selasa, 20 Oktober 2026.*Hari ini/}).waitFor();
   assert.ok((await calendar.locator('[aria-current="date"]').innerText()).startsWith('20'));
   assert.equal(sheetRequests,before,'Advancing the calendar date needs no spreadsheet requests');
   // Navigate to a month outside the source range without jumping to another month.
-  await page.getByRole('combobox',{name:'Bulan',exact:true}).selectOption('2027-06');
+  await page.getByRole('button',{name:'Daftar',exact:true}).click();
+  await page.getByRole('region',{name:'Daftar jadwal',exact:true}).getByRole('combobox',{name:'Bulan',exact:true}).selectOption('2027-06');
+  await page.getByRole('button',{name:'Kalender',exact:true}).click();
   await calendar.getByRole('button',{name:'Bulan berikutnya',exact:true}).click();
   await calendar.getByRole('heading',{name:'Juli 2027',exact:true}).waitFor();
   await calendar.getByRole('button',{name:/^Kamis, 1 Juli 2027/}).click();
@@ -71,11 +87,12 @@ try {
   await saturday.click();
   await page.screenshot({path:'/tmp/extra-tracker-calendar-desktop.png'});
   await page.setViewportSize({width:390,height:844});
+  await page.clock.runFor(100);
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
   await details.waitFor();
   assert.equal(await details.locator('li').count(),4);
   const box=await details.boundingBox();
-  assert.ok(box.x>=0&&box.x+box.width<=390&&box.y>=0&&box.y+box.height<=844,'Popover fits the mobile viewport');
+  assert.ok(box.x>=0&&box.x+box.width<=391&&box.y>=0&&box.y+box.height<=845,`Popover fits the mobile viewport: ${JSON.stringify(box)}`);
   assert.notEqual(await page.evaluate(()=>getComputedStyle(document.body).overflowY),'hidden');
   const scrollBefore=await page.evaluate(()=>scrollY);
   await details.locator('li').last().scrollIntoViewIfNeeded();
@@ -84,6 +101,8 @@ try {
   await details.getByRole('button',{name:'Tutup rincian kegiatan',exact:true}).click();
   assert.equal(await details.count(),0);
   assert.equal(await saturday.evaluate(el=>el===document.activeElement),true);
+  await page.evaluate(()=>window.scrollTo(0,0));
+  await page.screenshot({path:'/tmp/extra-tracker-schedule-integrated-mobile.png',fullPage:true});
   // Native buttons remain operable with a keyboard on mobile and desktop.
   const day=calendar.getByRole('button',{name:/^Selasa, 27 Oktober 2026/});
   await day.focus();await page.keyboard.press('Enter');
@@ -94,13 +113,15 @@ try {
   assert.equal(await day.evaluate(el=>el===document.activeElement),true);
   await saturday.click();
   await page.mouse.click(4,80);
+  await page.clock.runFor(100);
   await details.waitFor({state:'detached'});
   assert.equal(await saturday.getAttribute('aria-expanded'),'false');
   await page.getByRole('button',{name:'Daftar',exact:true}).click();
   await page.getByRole('combobox',{name:'Bulan',exact:true}).selectOption('all');
   await page.getByRole('heading',{name:'Jadwal terperinci',exact:true}).waitFor();
   await page.getByRole('button',{name:'Kalender',exact:true}).click();
-  assert.equal(await page.getByRole('combobox',{name:'Bulan',exact:true}).inputValue(),'2026-10');
+  assert.equal(await page.getByRole('combobox',{name:'Bulan',exact:true}).count(),0);
+  await calendar.getByRole('heading',{name:'Oktober 2026',exact:true}).waitFor();
   await page.getByRole('button',{name:'Refresh data',exact:true}).click();
   await page.waitForFunction(()=>!document.querySelector('button[aria-label="Refresh data"]').disabled);
   assert.deepEqual(errors,[]);

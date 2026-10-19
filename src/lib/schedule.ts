@@ -112,15 +112,15 @@ export function groupEventsByDate(
   return groups;
 }
 
-export function nextUpcomingEvent(events: EskulEvent[]): EskulEvent | null {
-  const today = isoToday();
+export function nextUpcomingEvent(events: EskulEvent[], today = isoToday()): EskulEvent | null {
   const upcoming = events
     .filter(
       (e) =>
         e.date >= today &&
+        e.statusNormalized !== "selesai" &&
         e.statusNormalized !== "ditiadakan" &&
         e.statusNormalized !== "libur",
     )
-    .sort((a, b) => a.date.localeCompare(b.date));
+    .sort((a, b) => a.date.localeCompare(b.date) || startMinutesOf(a) - startMinutesOf(b));
   return upcoming[0] ?? null;
 }

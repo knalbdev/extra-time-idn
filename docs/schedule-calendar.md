@@ -1,6 +1,6 @@
 # Kalender jadwal
 
-Menu **Jadwal** membuka kalender bulanan. Tombol **Daftar** menyediakan tampilan tabel sebelumnya, termasuk pilihan Semua Bulan. Filter kelas dan ekstrakurikuler berlaku pada kedua tampilan.
+Menu **Jadwal** membuka kalender bulanan. Filter kelas, pilihan ekstrakurikuler, dan tombol Kalender/Daftar berada dalam container jadwal. Kalender tidak memakai dropdown bulan; perpindahan bulan menggunakan panah dan tombol Hari ini. Tampilan **Daftar** tetap menyediakan filter bulan, termasuk pilihan Semua Bulan. Filter kelas dan ekstrakurikuler berlaku pada kedua tampilan.
 
 - Pekan dimulai Senin. Tanggal ditempatkan berdasarkan perhitungan kalender, bukan teks nama hari di spreadsheet.
 - **Hari ini** mengikuti Asia/Jakarta (WIB), memakai waktu perangkat. Penanda diperiksa setiap 30 detik dan saat tab kembali aktif. Perubahan tanggal tidak memerlukan request spreadsheet atau Supabase tambahan.
@@ -10,6 +10,8 @@ Menu **Jadwal** membuka kalender bulanan. Tombol **Daftar** menyediakan tampilan
 - Pop-up menyesuaikan posisi saat layar berubah dan dapat digulir di dalamnya. Tutup lewat tombol ×, klik di luar, atau Escape. Tidak ada penguncian scroll halaman. Tombol tutup dan Escape mengembalikan fokus ke tanggal pemicu.
 - Identitas Taekwondo menggunakan indigo, termasuk ikon, label, dan warna rekap. Warna status tetap mengikuti arti pelaksanaan, terpisah dari warna eskul.
 - Warna status mengikuti status spreadsheet. Kalender tidak mengubah sesi menjadi terlaksana berdasarkan waktu. Jadwal baru dari spreadsheet tetap dimuat melalui **Refresh data**.
+- Ringkasan status menjadi bagian ringkas di bawah kalender/daftar, dengan jumlah dan persentase menurut periode serta filter yang sedang dipakai. Tidak ada kartu progres terpisah.
+- Kartu **Jadwal terdekat** tersedia di dashboard, di samping agenda pekan ini pada layar lebar. Sumbernya seluruh jadwal aktif dari hari ini dan seterusnya, tanpa dipengaruhi filter halaman Jadwal. Sesi selesai, libur, atau ditiadakan dilewati; beberapa sesi pada tanggal yang sama diurutkan berdasarkan jam mulai.
 
 Tidak memerlukan library kalender, layanan kalender eksternal, migration Supabase, atau environment variable tambahan.
 

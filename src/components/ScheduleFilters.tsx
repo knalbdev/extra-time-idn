@@ -18,6 +18,7 @@ export function ScheduleFilters({
   selectedClass,
   onClassChange,
   allowAllMonths = true,
+  showMonth = true,
 }: {
   months: MonthOption[];
   selectedMonth: string;
@@ -25,10 +26,11 @@ export function ScheduleFilters({
   selectedClass: string;
   onClassChange: (v: string) => void;
   allowAllMonths?: boolean;
+  showMonth?: boolean;
 }) {
   return (
-    <div className="grid w-full grid-cols-1 gap-3 sm:w-auto sm:grid-cols-2">
-      <label className="block w-full text-sm sm:w-44">
+    <div className={`grid w-full grid-cols-1 gap-3 sm:w-auto ${showMonth ? "sm:grid-cols-2" : ""}`}>
+      {showMonth && <label className="block w-full text-sm sm:w-44">
         <span className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-on-surface-variant">
           Bulan
         </span>
@@ -51,7 +53,7 @@ export function ScheduleFilters({
             className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-lg text-on-surface-variant"
           />
         </div>
-      </label>
+      </label>}
 
       <label className="block w-full text-sm sm:w-44">
         <span className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-on-surface-variant">

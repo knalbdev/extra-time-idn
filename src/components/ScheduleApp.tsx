@@ -189,7 +189,6 @@ export function ScheduleApp({ onGoHome }: { onGoHome?: () => void }) {
                   <ReportView events={events} />
                 ) : (
                   <ScheduleView
-                    events={events}
                     filteredEvents={filteredEvents}
                     months={months}
                     selectedMonth={selectedMonth}

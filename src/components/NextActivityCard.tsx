@@ -2,16 +2,16 @@
 
 import { motion } from "framer-motion";
 import { ESKUL_META } from "@/lib/constants";
-import { summarizeClasses } from "@/lib/format";
+import { formatLongIndo, summarizeClasses } from "@/lib/format";
 import { EskulEvent } from "@/lib/types";
 import { EskulIcon } from "./EskulIcon";
 
 export function NextActivityCard({ event }: { event: EskulEvent | null }) {
   if (!event) {
     return (
-      <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-outline-variant/60 bg-white/60 p-6 text-center text-sm text-on-surface-variant">
+      <section aria-label="Jadwal terdekat" className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-outline-variant/60 bg-white/60 p-6 text-center text-sm text-on-surface-variant">
         Belum ada jadwal berikutnya.
-      </div>
+      </section>
     );
   }
 
@@ -19,7 +19,8 @@ export function NextActivityCard({ event }: { event: EskulEvent | null }) {
   const classLabels = summarizeClasses(event.classes);
 
   return (
-    <motion.div
+    <motion.section
+      aria-label="Jadwal terdekat"
       initial={{ opacity: 0, scale: 0.97 }}
       animate={{ opacity: 1, scale: 1 }}
       whileHover={{ y: -3, boxShadow: "0 14px 28px -10px rgba(3,34,77,0.45)" }}
@@ -58,7 +59,7 @@ export function NextActivityCard({ event }: { event: EskulEvent | null }) {
         {event.eskulLabel}
       </div>
       <p className="mt-3 text-sm text-on-primary/80">
-        {event.dateLabel} &middot; {event.time}
+        {formatLongIndo(event.date)} &middot; {event.time}
       </p>
 
       {classLabels.length > 0 && (
@@ -73,6 +74,6 @@ export function NextActivityCard({ event }: { event: EskulEvent | null }) {
           ))}
         </div>
       )}
-    </motion.div>
+    </motion.section>
   );
 }
