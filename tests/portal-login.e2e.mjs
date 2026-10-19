@@ -21,10 +21,11 @@ try {
   });
   const loading = title => page.getByRole('dialog', { name: title, exact: true });
   async function login(card, username) {
+    await page.goto('http://localhost:3033/'+(username==='admin'?'admin':'coach'));
     await page.getByRole('button', { name: card }).click();
     await page.getByLabel('Username', { exact: true }).fill(username);
     await page.getByLabel('Password', { exact: true }).fill('Fixture-Password-123!');
-    await page.getByRole('button', { name: 'Masuk workspace', exact: true }).click();
+    await page.getByRole('button', { name: 'Masuk', exact: true }).click();
     await loading('Sedang memeriksa akun…').waitFor();
     await page.getByRole('button', { name: 'Keluar akun', exact: true }).waitFor();
     const unlocked = await page.evaluate(() => ({ body: getComputedStyle(document.body).overflowY, html: getComputedStyle(document.documentElement).overflowY, dialogs: document.querySelectorAll('dialog[open]').length }));
@@ -36,7 +37,7 @@ try {
     await page.getByRole('button', { name: 'Keluar akun', exact: true }).click();
     await page.getByRole('dialog', { name: 'Keluar dari akun?', exact: true }).waitFor();
     await page.getByRole('button', { name: 'Ya, keluar', exact: true }).click();
-    await page.getByRole('button', { name: 'Masuk admin', exact: true }).waitFor();
+    await page.getByRole('heading', { name: new URL(page.url()).pathname==='/admin'?'Portal Admin':'Portal Coach', exact: true }).waitFor();
   }
   await page.goto('http://localhost:3033/coach', { waitUntil: 'domcontentloaded' });
   assert.equal((await page.content()).includes('Aini Rayhana Anwar'), false);
@@ -48,12 +49,12 @@ try {
   assert.equal(await page.getByLabel('Password', { exact: true }).inputValue(), 'wrong');
   await page.getByRole('button', { name: 'Sembunyikan password', exact: true }).click();
   assert.equal(await page.getByLabel('Password', { exact: true }).getAttribute('type'), 'password');
-  await page.getByRole('button', { name: 'Masuk workspace', exact: true }).click();
+  await page.getByRole('button', { name: 'Masuk', exact: true }).click();
   await page.getByRole('alert').filter({ hasText: 'Username atau password' }).waitFor();
   await page.getByRole('button', { name: 'Tutup popup password', exact: true }).click();
   await login(/Coach Renang/, 'coach.renang');
   assert.ok((await context.cookies()).some(cookie => cookie.name.startsWith('sb-') && cookie.httpOnly));
-  assert.equal(await page.getByRole('button', { name: 'Reporting ekskul', exact: true }).count(), 0);
+  assert.equal(await page.getByRole('button', { name: 'Laporan penilaian', exact: true }).count(), 0);
 
   await page.getByRole('button', { name: '+ Buat pertemuan', exact: true }).click();
   await page.getByLabel('Nama pertemuan', { exact: true }).fill('Latihan Supabase');
@@ -71,7 +72,7 @@ try {
     await page.getByLabel('Catatan coach (opsional)', { exact: true }).fill(i === 0 ? note : `Catatan ${attendance.toLowerCase()}`);
     await page.getByRole('button', { name: 'Simpan absensi & penilaian', exact: true }).click();
     await loading('Sedang mengirim data penilaian…').waitFor();
-    assert.equal(await page.getByRole('button', { name: 'Refresh data', exact: true }).isDisabled(), true);
+    assert.equal(await page.getByRole('button', { name: 'Perbarui data', exact: true }).isDisabled(), true);
     assert.equal(await page.evaluate(() => document.activeElement?.closest('dialog')?.getAttribute('aria-labelledby')), 'portal-loading-title');
     await page.keyboard.press('Escape');
     assert.equal(await loading('Sedang mengirim data penilaian…').isVisible(), true);
@@ -100,14 +101,14 @@ try {
   await row.click();
   assert.equal(await page.getByRole('radio', { name: 'Pernapasan dasar E', exact: true }).isChecked(), true);
   assert.equal(await page.getByLabel('Catatan coach (opsional)', { exact: true }).inputValue(), note);
-  await page.getByRole('button', { name: 'Refresh data', exact: true }).click();
+  await page.getByRole('button', { name: 'Perbarui data', exact: true }).click();
   await loading('Sedang memperbarui data…').waitFor();
   await page.getByRole('status').filter({ hasText: 'Data sudah diperbarui' }).waitFor();
   failNextAction = true;
-  await page.getByRole('button', { name: 'Refresh data', exact: true }).click();
+  await page.getByRole('button', { name: 'Perbarui data', exact: true }).click();
   await page.getByRole('alert').filter({ hasText: 'Proses belum dapat diselesaikan' }).waitFor();
-  assert.equal(await page.getByRole('button', { name: 'Refresh data', exact: true }).isEnabled(), true);
-  await page.getByRole('button', { name: 'Refresh data', exact: true }).click();
+  assert.equal(await page.getByRole('button', { name: 'Perbarui data', exact: true }).isEnabled(), true);
+  await page.getByRole('button', { name: 'Perbarui data', exact: true }).click();
   await page.getByRole('status').filter({ hasText: 'Data sudah diperbarui' }).waitFor();
   await row.click();
   await page.getByLabel('Catatan coach (opsional)', { exact: true }).fill('Perubahan belum disimpan');
@@ -118,7 +119,7 @@ try {
   await page.screenshot({ path: '/tmp/extra-tracker-logout-mobile.png' });
   await page.getByRole('button', { name: 'Batal', exact: true }).click();
   assert.equal(await page.getByLabel('Catatan coach (opsional)', { exact: true }).inputValue(), 'Perubahan belum disimpan');
-  await page.getByRole('button', { name: 'Refresh data', exact: true }).click();
+  await page.getByRole('button', { name: 'Perbarui data', exact: true }).click();
   await page.getByRole('dialog', { name: 'Tinggalkan perubahan?', exact: true }).waitFor();
   await page.keyboard.press('Escape');
   assert.equal(await page.getByLabel('Catatan coach (opsional)', { exact: true }).inputValue(), 'Perubahan belum disimpan');
@@ -128,10 +129,11 @@ try {
   console.log('PASS login, blocking loading, visible feedback, attendance colors/grades/notes, refresh failure recovery, custom confirmations, mobile, persistence');
 
   await page.setViewportSize({ width: 1440, height: 1000 });
-  await login('Masuk admin', 'admin');
-  await page.getByRole('button', { name: 'Reporting ekskul', exact: true }).click();
-  await page.getByRole('button', { name: 'Generate laporan', exact: true }).click();
-  await page.getByRole('status').filter({ hasText: 'Laporan berhasil disusun' }).waitFor();
+  await login('Masuk sebagai admin', 'admin');
+  await page.getByRole('button', { name: 'Manajemen coach', exact: true }).click();
+  await page.getByRole('button', { name: 'Laporan penilaian', exact: true }).click();
+  await page.getByRole('button', { name: 'Buat laporan', exact: true }).click();
+  await page.getByRole('status').filter({ hasText: 'Laporan berhasil dibuat' }).waitFor();
   const report = page.locator('#coach-report');
   assert.ok((await report.textContent()).includes('Pernapasan dasar'));
   assert.equal((await report.textContent()).includes('Invalid Date'), false);
@@ -181,7 +183,7 @@ try {
   console.log(`PASS report cover/logo, shared context, complete notes, CSV, responsive navigation, ${slideCount} slides, direct PDF and editable PowerPoint downloads`);
 
   await page.setViewportSize({ width: 1440, height: 1000 });
-  await page.getByRole('button', { name: 'Manajemen coach', exact: true }).click();
+  await page.getByRole('button', { name: 'Akun coach', exact: true }).click();
   const coach = page.locator('div.rounded-xl.border').filter({ has: page.getByText('coach.renang · Aktif', { exact: true }) });
   await coach.getByRole('button', { name: 'Ubah', exact: true }).click();
   await page.getByLabel('Akun aktif', { exact: true }).uncheck();
@@ -189,10 +191,11 @@ try {
   await loading('Sedang menyimpan penugasan…').waitFor();
   await page.getByRole('status').filter({ hasText: 'Penugasan dan status akun berhasil diperbarui' }).waitFor();
   await logout();
+  await page.goto('http://localhost:3033/coach');
   await page.getByRole('button', { name: /Coach Renang/ }).click();
   await page.getByLabel('Username', { exact: true }).fill('coach.renang');
   await page.getByLabel('Password', { exact: true }).fill('Fixture-Password-123!');
-  await page.getByRole('button', { name: 'Masuk workspace', exact: true }).click();
+  await page.getByRole('button', { name: 'Masuk', exact: true }).click();
   await page.getByRole('alert').filter({ hasText: 'Username atau password' }).waitFor();
   await page.getByRole('button', { name: 'Tutup popup password', exact: true }).click();
   await login(/Coach Panahan/, 'coach.panahan');

@@ -44,4 +44,4 @@ Rentang 4 Agustus 2026–29 Juni 2027. Seluruh 149 baris sesuai dengan Jadwal In
 
 Ikuti prosedur build/start fixture pada `docs/supabase-integration.md` untuk port 3033. Pengujian tidak mengubah spreadsheet atau Supabase produksi.
 
-Setelah perubahan source diterapkan, deploy source terbaru ke Vercel. Tidak perlu mengubah konfigurasi Supabase atau menjalankan migration database untuk pergantian spreadsheet ini. Pembaruan isi spreadsheet berikutnya dapat diambil lewat **Refresh data** tanpa deploy ulang selama struktur dan nama tab tetap sama.
+Setelah perubahan source diterapkan, deploy source terbaru ke Vercel. Tidak perlu mengubah konfigurasi Supabase atau menjalankan migration database untuk pergantian spreadsheet ini. Pembaruan isi spreadsheet berikutnya dapat diambil lewat **Perbarui data** tanpa deploy ulang selama struktur dan nama tab tetap sama.

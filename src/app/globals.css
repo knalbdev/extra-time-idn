@@ -65,6 +65,82 @@ body {
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
 }
 
+/* Keep controls and flex/grid fieldsets within narrow screens. */
+fieldset { min-inline-size: 0; }
+button, a, input, select, textarea { -webkit-tap-highlight-color: transparent; }
+button, a { touch-action: manipulation; }
+button:focus-visible, a:focus-visible { outline: 2px solid #0054cd; outline-offset: 3px; }
+@media (max-width: 639px) {
+  input:not([type="checkbox"]):not([type="radio"]), select, textarea { font-size: 16px; }
+  input[type="date"] { min-width: 0; max-width: 100%; }
+}
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+
+.companion-workspace {
+  background: radial-gradient(ellipse at 90% 5%, #e0efff 0, transparent 34%), #f5f7fb;
+}
+.companion-header-button {
+  display: inline-flex; min-height: 44px; align-items: center; justify-content: center; gap: 7px;
+  padding: 10px 12px; border: 1px solid #e2e8f0; border-radius: 13px;
+  background: white; color: #03224d; font-size: 12px; font-weight: 600; transition: background .2s;
+}
+.companion-header-button:hover { background: #eff6ff; }
+.companion-header-button:disabled { opacity: .45; }
+.companion-hero {
+  position: relative; isolation: isolate; overflow: hidden; display: flex; align-items: center; justify-content: space-between;
+  gap: 32px; padding: 36px; border: 1px solid #244c78; border-radius: 28px;
+  background: radial-gradient(ellipse at 100% 10%, #247da1 0, transparent 62%), linear-gradient(120deg, #0c2548, #184b82);
+  color: white; box-shadow: 0 14px 40px -25px #12365980;
+}
+.companion-hero::before {
+  content: ""; pointer-events: none; position: absolute; z-index: -1; inset: 0; opacity: .12;
+  background-image: radial-gradient(#bbdefb 1px, transparent 1px); background-size: 20px 20px;
+  mask-image: linear-gradient(to right, transparent, black);
+}
+.companion-hero-mark {
+  display: flex; width: 144px; height: 144px; flex-shrink: 0; align-items: center; justify-content: center;
+  border: 1px solid #ffffff40; border-radius: 36px; background: #ffffff0d; color: #bfedff;
+  box-shadow: 0 0 0 18px #ffffff05, 0 0 0 36px #ffffff03; transform: rotate(-8deg);
+}
+.companion-hero-mark .material-symbols-outlined { font-size: 72px; }
+.companion-gateway-hero { display: grid; grid-template-columns: minmax(0,1.3fr) minmax(0,1fr); padding: 44px; gap: 48px; }
+.companion-reminders {
+  position: relative; padding: 28px; border: 1px solid; border-radius: 28px;
+}
+.companion-reminders-pending {
+  border-color: #f4bd51; background: radial-gradient(ellipse at 100% 0, #ffe4a0 0, transparent 48%), #fff9e9;
+  box-shadow: 0 12px 30px -18px #b56a1740, inset 0 4px 0 #f4b338;
+}
+.companion-reminders-clear { border-color: #e2e8f0; background: white; }
+.companion-reminder-card {
+  min-width: 0; display: flex; flex-direction: column; padding: 24px; border: 1px solid #f0d6a5; border-radius: 22px;
+  background: white; box-shadow: 0 5px 16px -10px #9a670b40;
+}
+.companion-reminder-action {
+  display: inline-flex; min-height: 48px; width: 100%; align-items: center; justify-content: space-between; gap: 12px;
+  margin-top: 24px; padding: 13px 16px; border: 1px solid #03224d; border-radius: 14px;
+  background: #03224d; color: white; font-size: 14px; font-weight: 600; transition: background .2s, box-shadow .2s;
+}
+.companion-reminder-action:hover { background: #164779; box-shadow: 0 5px 16px #03224d20; }
+.companion-reminder-action:disabled { opacity: .45; cursor: not-allowed; }
+.companion-form { box-shadow: 0 10px 32px -24px #03224d40; }
+.companion-form label { line-height: 1.5; }
+.companion-form input:not([type="checkbox"]), .companion-form select, .companion-form textarea { min-height: 48px; border-radius: 14px; }
+.companion-step { display: flex; align-items: center; gap: 10px; color: #03224d; font-size: 14px; font-weight: 700; }
+.companion-step > span { display: inline-flex; height: 30px; width: 30px; flex-shrink: 0; align-items: center; justify-content: center; border-radius: 10px; background: #eff5ff; color: #0054cd; font-size: 11px; }
+.companion-receipt { background: linear-gradient(135deg, white, #effcf6); border-color: #bde9d0; }
+@media (max-width: 767px) {
+  .companion-hero { gap: 20px; padding: 26px 22px; border-radius: 24px; }
+  .companion-hero-mark { display: none; }
+  .companion-gateway-hero { grid-template-columns: minmax(0,1fr); gap: 28px; }
+  .companion-reminders { padding: 22px 18px; border-radius: 24px; }
+  .companion-reminder-card { padding: 20px; border-radius: 18px; }
+}
+@media (max-width: 359px) {
+  .companion-header-button { padding: 10px; gap: 5px; font-size: 11px; }
+  .companion-reminders > header > div { flex-basis: 100%; }
+}
+
 .material-symbols-outlined {
   display: inline-block;
   width: 1em;

@@ -9,7 +9,7 @@ Buka `/coach`, atau tautan Portal Coach di beranda/sidebar.
 - Nama mengikuti data yang diberikan; spasi dan karakter tak terlihat dibersihkan.
 - Simulasi admin mengatur profil coach, status aktif, ekskul dan jenjang penugasan.
 - Kartu per coach/ekskul menggantikan dropdown profil. Setelah kartu dipilih, popup password simulasi muncul (fokus terkunci di dialog, Escape/klik luar/tombol tutup untuk kembali). Password demo: `coach-demo`.
-- Workspace coach hanya menyediakan pertemuan, absensi dan penilaian. Generate laporan, CSV serta cetak/PDF tersedia pada menu Reporting Ekskul di admin, dengan pilihan coach dan ekskul. Data historis coach nonaktif atau berganti penugasan tetap dapat dilaporkan oleh admin.
+- Workspace coach hanya menyediakan pertemuan, absensi dan penilaian. Generate laporan, CSV serta cetak/PDF tersedia pada menu Laporan penilaian di admin, dengan pilihan coach dan ekskul. Data historis coach nonaktif atau berganti penugasan tetap dapat dilaporkan oleh admin.
 - Setiap pertemuan memiliki tanggal, semester, satu kelas, materi/skill inti dan standar umum predikat A–E yang disediakan otomatis. Coach tidak perlu membuat kriteria/deskripsi sendiri.
 - Kehadiran: hadir, izin, sakit, alpa. Belum dicatat tetap berbeda dari alpa. Hanya siswi hadir yang dinilai pada tiap kriteria.
 - Pertemuan/rubrik dikunci setelah ada catatan siswi untuk menjaga makna penilaian. Teknik berikutnya dibuat sebagai pertemuan baru.

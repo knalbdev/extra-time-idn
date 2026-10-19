@@ -40,7 +40,7 @@ try {
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
   await agenda.screenshot({ path: '/tmp/extra-tracker-dashboard-agenda-mobile.png' });
   longLabel = true;
-  await page.getByRole('button', { name: 'Refresh data', exact: true }).click();
+  await page.getByRole('button', { name: 'Perbarui data', exact: true }).click();
   await agenda.getByLabel(`Status pelaksanaan: ${'MenungguKonfirmasi'.repeat(20)}`, { exact: true }).waitFor();
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false, 'Long spreadsheet labels wrap on mobile');
   assert.deepEqual(errors, []);

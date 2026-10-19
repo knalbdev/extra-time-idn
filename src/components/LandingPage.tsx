@@ -84,7 +84,7 @@ export function LandingPage({
             transition={{ delay: 0.22, duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
             className="mt-3 bg-gradient-to-r from-white via-sky-100 to-cyan-300 bg-clip-text font-heading text-3xl font-bold tracking-tight text-transparent sm:text-5xl"
           >
-            Temukan Potensi Terbaikmu
+            Ekstrakurikuler IDN Akhwat
           </motion.h1>
           <motion.p
             initial={{ opacity: 0, y: 14 }}
@@ -92,8 +92,7 @@ export function LandingPage({
             transition={{ delay: 0.3, duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
             className="mx-auto mt-4 max-w-xl text-sm text-on-primary/80 sm:text-base"
           >
-            Pantau jadwal ekstrakurikuler yang sedang aktif dalam satu tempat —
-            selalu sinkron dengan data terbaru.
+            Lihat jadwal, kelas peserta, dan status pelaksanaan kegiatan.
           </motion.p>
 
           <MagneticButton
@@ -117,7 +116,7 @@ export function LandingPage({
             Ekstrakurikuler Kami
           </h2>
           <p className="mt-2 text-sm text-on-surface-variant">
-            Kegiatan pilihan untuk mengembangkan minat dan karakter siswa.
+            Kegiatan pilihan untuk mengembangkan minat dan karakter siswi.
           </p>
         </div>
 
@@ -177,13 +176,13 @@ export function LandingPage({
             whileTap={{ scale: 0.96 }}
             className="inline-flex items-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-on-primary shadow-sm"
           >
-            Buka Temukan Potensi Terbaikmu
+            Buka dashboard
             <Icon name="arrow_forward" className="text-lg" />
           </MagneticButton>
         </div>
       </main>
 
-      <div className="mx-auto mb-12 flex max-w-5xl flex-wrap items-center justify-between gap-4 px-6"><div><p className="text-sm font-semibold text-primary">Ruang untuk para pembimbing</p><p className="mt-1 text-xs text-on-surface-variant">Masuk untuk mencatat materi, absensi, dan penilaian.</p></div><Link href="/coach" className="inline-flex items-center gap-2 rounded-xl border border-outline-variant bg-white px-5 py-3 text-sm font-semibold text-primary">Portal Coach<Icon name="arrow_forward" className="text-lg" /></Link></div>
+      <div className="mx-auto mb-12 flex max-w-5xl flex-wrap items-center justify-between gap-4 px-6"><div><p className="text-sm font-semibold text-primary">Akses coach dan admin</p><p className="mt-1 text-xs text-on-surface-variant">Masuk untuk mencatat materi, absensi, dan penilaian.</p></div><Link href="/coach" className="inline-flex items-center gap-2 rounded-xl border border-outline-variant bg-white px-5 py-3 text-sm font-semibold text-primary">Portal Coach<Icon name="arrow_forward" className="text-lg" /></Link><Link href="/admin" className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-white">Portal Admin<Icon name="arrow_forward" className="text-lg"/></Link></div>
       <footer className="border-t border-outline-variant/50 bg-white/60">
         <div className="mx-auto flex max-w-5xl flex-col items-center gap-2 px-6 py-8 text-center">
           <p className="text-xs text-on-surface-variant/70">&copy; IDN Akhwat 2026</p>

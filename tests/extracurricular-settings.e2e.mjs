@@ -16,11 +16,11 @@ try {
     return route.fulfill({ contentType: 'text/csv', body: csv });
   });
   async function login(page, card, username) {
-    await page.goto('http://localhost:3033/coach');
+    await page.goto('http://localhost:3033/'+(username==='admin'?'admin':'coach'));
     await page.getByRole('button', { name: card }).click();
     await page.getByLabel('Username', { exact: true }).fill(username);
     await page.getByLabel('Password', { exact: true }).fill('Fixture-Password-123!');
-    await page.getByRole('button', { name: 'Masuk workspace', exact: true }).click();
+    await page.getByRole('button', { name: 'Masuk', exact: true }).click();
     await page.getByRole('button', { name: 'Keluar akun', exact: true }).waitFor();
   }
   async function switchActivity(label, active) {
@@ -30,7 +30,8 @@ try {
     await admin.getByRole('status').filter({ hasText: `${label} berhasil ${active ? 'diaktifkan' : 'dinonaktifkan'}` }).waitFor();
     assert.equal(await admin.getByRole('switch', { name: `Aktifkan ${label}`, exact: true }).getAttribute('aria-checked'), String(active));
   }
-  await login(admin, 'Masuk admin', 'admin');
+  await login(admin, 'Masuk sebagai admin', 'admin');
+  await admin.getByRole('button', { name: 'Manajemen coach', exact: true }).click();
   await admin.getByRole('button', { name: 'Pengaturan ekskul', exact: true }).click();
   assert.equal(await admin.getByRole('switch').count(), 5);
   assert.equal(await admin.getByRole('switch', { name: 'Aktifkan Pramuka', exact: true }).getAttribute('aria-checked'), 'false');
@@ -45,8 +46,8 @@ try {
   await visitor.goto('http://localhost:3033/');
   assert.equal(await visitor.getByText('Pramuka', { exact: true }).count(), 0);
   await visitor.getByRole('button', { name: /^Lihat Jadwal/ }).first().click();
-  await visitor.getByRole('button', { name: 'Refresh data', exact: true }).waitFor({ state: 'visible' });
-  await visitor.waitForFunction(() => !document.querySelector('button[aria-label="Refresh data"]').disabled);
+  await visitor.getByRole('button', { name: 'Perbarui data', exact: true }).waitFor({ state: 'visible' });
+  await visitor.waitForFunction(() => !document.querySelector('button[aria-label="Perbarui data"]').disabled);
   assert.equal(await visitor.getByText('Pramuka', { exact: true }).count(), 0);
   assert.ok(sheetRequests.includes('Renang'));
   assert.ok(!sheetRequests.includes('Pramuka'), 'Paused sheet is not fetched');
@@ -65,17 +66,18 @@ try {
   await gateway.waitForFunction(() => !document.querySelector('dialog[open]'));
   assert.notEqual(await gateway.evaluate(() => getComputedStyle(document.body).overflowY), 'hidden');
   // Existing public pages remove the activity when refreshed; unrelated activities remain.
-  await visitor.getByRole('button', { name: 'Refresh data', exact: true }).click();
-  await visitor.waitForFunction(() => !document.querySelector('button[aria-label="Refresh data"]').disabled);
+  await visitor.getByRole('button', { name: 'Perbarui data', exact: true }).click();
+  await visitor.waitForFunction(() => !document.querySelector('button[aria-label="Perbarui data"]').disabled);
   assert.equal(await visitor.getByText('Renang', { exact: true }).count(), 0);
   assert.ok(await visitor.getByText('Panahan', { exact: true }).count() > 0);
-  await admin.getByRole('button', { name: 'Reporting ekskul', exact: true }).click();
+  await admin.getByRole('button', { name: 'Laporan penilaian', exact: true }).click();
   assert.ok(!(await admin.getByLabel('Ekskul laporan', { exact: true }).locator('option').allTextContents()).includes('Renang'));
   await admin.getByRole('button', { name: 'Rekap sesi', exact: true }).click();
   assert.ok(!(await admin.getByLabel('Ekstrakurikuler rekap', { exact: true }).locator('option').allTextContents()).includes('Renang'));
-  await admin.getByRole('button', { name: 'Manajemen coach', exact: true }).click();
+  await admin.getByRole('button', { name: 'Akun coach', exact: true }).click();
   assert.equal(await admin.getByText('coach.renang', { exact: false }).count(), 0);
   await admin.reload();
+  await admin.getByRole('button', { name: 'Manajemen coach', exact: true }).click();
   await admin.getByRole('button', { name: 'Pengaturan ekskul', exact: true }).click();
   assert.equal(await admin.getByRole('switch', { name: 'Aktifkan Renang', exact: true }).getAttribute('aria-checked'), 'false', 'Pause persists across reloads');
   const settings = await (await visitor.request.get('http://localhost:3033/api/extracurriculars')).json();
@@ -83,10 +85,10 @@ try {
   await visitor.goto('http://localhost:3033/coach');
   assert.equal(await visitor.getByRole('button', { name: /Coach Renang/ }).count(), 0);
   assert.equal(await visitor.getByRole('button', { name: /Coach Pramuka/ }).count(), 0);
-  await visitor.getByRole('button', { name: 'Masuk admin', exact: true }).waitFor();
+  await visitor.getByRole('heading', { name: 'Portal Coach', exact: true }).waitFor();
 
   await switchActivity('Renang', true);
-  await coach.getByRole('button', { name: 'Refresh data', exact: true }).click();
+  await coach.getByRole('button', { name: 'Perbarui data', exact: true }).click();
   await coach.getByRole('heading', { name: 'Ruang Renang', exact: true }).waitFor();
   await coach.getByRole('button', { name: '+ Buat pertemuan', exact: true }).waitFor();
   assert.equal(await coach.getByLabel('Nama pertemuan', { exact: true }).count(), 0, 'Paused draft is not silently reopened');
@@ -100,8 +102,9 @@ try {
   for (const label of ['Renang', 'Panahan', 'Berkuda', 'Taekwondo']) await switchActivity(label, false);
   await visitor.reload();
   assert.equal(await visitor.getByRole('button', { name: /Coach (Renang|Panahan|Berkuda|Taekwondo|Pramuka)/ }).count(), 0);
-  await visitor.getByRole('button', { name: 'Masuk admin', exact: true }).waitFor();
+  await visitor.getByRole('heading', { name: 'Portal Coach', exact: true }).waitFor();
   await admin.reload();
+  await admin.getByRole('button', { name: 'Manajemen coach', exact: true }).click();
   await admin.getByRole('button', { name: 'Pengaturan ekskul', exact: true }).click();
   for (const label of ['Renang', 'Panahan', 'Berkuda', 'Taekwondo']) await switchActivity(label, true);
   await admin.setViewportSize({ width: 390, height: 844 });

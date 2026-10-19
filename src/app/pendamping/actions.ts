@@ -47,7 +47,7 @@ export async function submitCompanionReportAction(input: unknown): Promise<Actio
       report_notes:form.notes, report_drive_url:form.driveUrl,
     });
     if (result.error) return { ok:false, error:"Laporan belum dapat dipastikan terkirim. Coba kirim kembali dengan isian yang sama atau hubungi admin." };
-    revalidatePath("/coach");
+    revalidatePath("/admin");
     return { ok:true, data:{id:form.id,name:form.name,eskul:session.eskulLabel,date:session.date} };
   } catch { return { ok:false, error:"Koneksi terputus saat mengirim laporan. Coba kirim kembali dengan isian yang sama; laporan tidak akan digandakan." }; }
 }

@@ -35,14 +35,14 @@ try {
     await enterFromDashboard();
     for (let i = 0; i < 3; i++) {
       await page.getByRole('button', { name: /Coach Renang/ }).click();
-      await page.getByRole('dialog', { name: 'Masuk ruang Renang', exact: true }).waitFor();
+      await page.getByRole('dialog', { name: 'Masuk sebagai coach Renang', exact: true }).waitFor();
       await page.keyboard.press('Escape');
       await idleAndScrollable();
     }
     await page.getByRole('button', { name: /Coach Renang/ }).click();
     await page.getByLabel('Username', { exact: true }).fill('coach.renang');
     await page.getByLabel('Password', { exact: true }).fill('Fixture-Password-123!');
-    await page.getByRole('button', { name: 'Masuk workspace', exact: true }).click();
+    await page.getByRole('button', { name: 'Masuk', exact: true }).click();
     await page.getByRole('dialog', { name: 'Sedang memeriksa akun…', exact: true }).waitFor();
     assert.equal(await page.locator('dialog[open]').count(), 2, 'Login and loading overlap in this regression');
     await page.getByRole('button', { name: 'Keluar akun', exact: true }).waitFor();
@@ -61,7 +61,7 @@ try {
     assert.equal(new URL(page.url()).pathname, '/coach');
     await page.getByRole('button', { name: 'Keluar akun', exact: true }).waitFor();
     for (let i = 0; i < 2; i++) {
-      await page.getByRole('button', { name: 'Refresh data', exact: true }).click();
+      await page.getByRole('button', { name: 'Perbarui data', exact: true }).click();
       await page.getByRole('dialog', { name: 'Sedang memperbarui data…', exact: true }).waitFor();
       await page.getByRole('status').filter({ hasText: 'Data sudah diperbarui' }).waitFor();
       await idleAndScrollable();
@@ -72,19 +72,19 @@ try {
     await idleAndScrollable();
     await page.getByRole('button', { name: 'Keluar akun', exact: true }).click();
     await page.getByRole('button', { name: 'Ya, keluar', exact: true }).click();
-    await page.getByRole('button', { name: 'Masuk admin', exact: true }).waitFor();
+    await page.getByRole('heading', { name: 'Portal Coach', exact: true }).waitFor();
     await idleAndScrollable();
     await page.getByRole('link', { name: '← Kembali ke dashboard', exact: true }).click();
-    await page.getByRole('button', { name: 'Refresh data', exact: true }).waitFor();
+    await page.getByRole('button', { name: 'Perbarui data', exact: true }).waitFor();
     assert.equal(new URL(page.url()).searchParams.get('view'), 'dashboard');
     assert.equal(await page.getByRole('button', { name: /^Lihat Jadwal/ }).count(), 0);
     await page.goto('http://localhost:3033/pendamping', { waitUntil: 'domcontentloaded' });
     await page.getByRole('link', { name: '← Kembali ke dashboard', exact: true }).click();
-    await page.getByRole('button', { name: 'Refresh data', exact: true }).waitFor();
+    await page.getByRole('button', { name: 'Perbarui data', exact: true }).waitFor();
     assert.equal(new URL(page.url()).searchParams.get('view'), 'dashboard');
     await enterFromDashboard(true);
     await page.getByRole('button', { name: /Coach Renang/ }).click();
-    await page.getByRole('dialog', { name: 'Masuk ruang Renang', exact: true }).waitFor();
+    await page.getByRole('dialog', { name: 'Masuk sebagai coach Renang', exact: true }).waitFor();
     await page.getByRole('button', { name: 'Tutup popup password', exact: true }).click();
     await idleAndScrollable();
     assert.deepEqual(errors, []);

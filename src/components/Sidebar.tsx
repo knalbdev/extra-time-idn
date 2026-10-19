@@ -41,10 +41,11 @@ export function Sidebar({
 
       <aside
         ref={ref}
-        className={`fixed inset-y-0 left-0 z-50 flex w-[248px] shrink-0 -translate-x-full flex-col overflow-hidden bg-[#102544] py-2 text-on-primary transition-transform duration-200 lg:sticky lg:top-0 lg:h-screen lg:translate-x-0 ${
-          open ? "translate-x-0" : ""
+        className={`fixed inset-y-0 left-0 z-50 h-dvh max-w-[calc(100vw-2rem)] flex w-[248px] shrink-0 -translate-x-full flex-col overflow-hidden lg:max-w-none bg-[#102544] py-2 text-on-primary transition-transform duration-200 lg:sticky lg:top-0 lg:h-screen lg:translate-x-0 ${
+          open ? "visible translate-x-0" : "invisible lg:visible"
         }`}
       >
+        <button type="button" aria-label="Tutup menu" onClick={onClose} className="absolute right-2 top-2 z-10 flex h-11 w-11 items-center justify-center rounded-xl text-white/80 hover:bg-white/10 lg:hidden"><Icon name="close" className="text-xl"/></button>
         <div
           aria-hidden
           className="pointer-events-none absolute inset-0 opacity-[0.1]"
@@ -68,7 +69,7 @@ export function Sidebar({
           onClick={onGoHome}
           disabled={!onGoHome}
           title="Kembali ke beranda"
-          className="flex flex-col items-start gap-3 rounded-lg px-6 py-7 text-left transition-colors hover:bg-white/5 disabled:cursor-default disabled:hover:bg-transparent"
+          className="flex flex-col items-start gap-3 rounded-lg px-6 py-5 sm:py-7 text-left transition-colors hover:bg-white/5 disabled:cursor-default disabled:hover:bg-transparent"
         >
           <Image
             src="/idn.png"
@@ -87,8 +88,8 @@ export function Sidebar({
           </div>
         </button>
 
-        <p className="px-8 pb-3 pt-4 text-[10px] font-semibold tracking-[0.18em] text-white/35">WORKSPACE</p>
-        <div className="mt-2 flex flex-1 flex-col gap-2 px-4">
+        <p className="px-8 pb-3 pt-4 text-[10px] font-semibold tracking-[0.18em] text-white/35">MENU UTAMA</p>
+        <div className="mt-2 flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto overscroll-contain px-4 pb-3">
           {NAV_ITEMS.map((item) => {
             const isActive = active === item.key;
             return (
@@ -118,9 +119,11 @@ export function Sidebar({
             );
           })}
 
-          <Link href="/coach" onNavigate={onClose} className="flex items-center gap-3 rounded-xl border border-white/10 px-4 py-3 text-sm font-medium text-white/80 transition hover:bg-white/10"><Icon name="sports" className="text-xl" />Portal Coach<span className="ml-auto text-[9px] text-white/50">LOGIN</span></Link>
+          <Link href="/coach" onNavigate={onClose} className="flex items-center gap-3 rounded-xl border border-white/10 px-4 py-3 text-sm font-medium text-white/80 transition hover:bg-white/10"><Icon name="sports" className="text-xl" />Portal Coach<span className="ml-auto text-[9px] text-white/50">MASUK</span></Link>
 
-          <Link href="/pendamping" className="flex items-center gap-3 rounded-xl border border-white/10 px-4 py-3 text-sm font-medium text-white/80 transition hover:bg-white/10"><Icon name="photo_library" className="text-xl" /><span>Portal Pendamping<span className="mt-1 block text-[9px] font-normal text-white/50">Dokumentasi kegiatan</span></span></Link>
+          <Link href="/pendamping" onNavigate={onClose} className="flex items-center gap-3 rounded-xl border border-white/10 px-4 py-3 text-sm font-medium text-white/80 transition hover:bg-white/10"><Icon name="photo_library" className="text-xl" /><span>Portal Pendamping<span className="mt-1 block text-[9px] font-normal text-white/50">Dokumentasi kegiatan</span></span></Link>
+
+          <Link href="/admin" onNavigate={onClose} className="flex items-center gap-3 rounded-xl border border-white/10 px-4 py-3 text-sm font-medium text-white/80 transition hover:bg-white/10"><Icon name="admin_panel_settings" className="text-xl"/>Portal Admin</Link>
 
           {onGoHome && (
             <motion.button

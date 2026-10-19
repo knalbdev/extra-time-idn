@@ -12,11 +12,11 @@ try {
   await page.clock.install({time:new Date('2030-06-01T00:00:00Z')});
   await other.clock.install({time:new Date('2030-06-01T00:00:00Z')});
   async function login(p,role){
-    await p.goto('http://localhost:3033/'+(role==='admin'?'coach':'pendamping'));
-    await p.getByRole('button',{name:role==='admin'?'Masuk admin':'Masuk pendamping',exact:true}).click();
+    await p.goto('http://localhost:3033/'+(role==='admin'?'admin':'pendamping'));
+    await p.getByRole('button',{name:role==='admin'?'Masuk sebagai admin':'Masuk sebagai pendamping',exact:true}).click();
     await p.getByLabel('Username',{exact:true}).fill(role==='admin'?'admin':'pendamping.eskul');
     await p.getByLabel('Password',{exact:true}).fill('Fixture-Password-123!');
-    await p.getByRole('button',{name:'Masuk workspace',exact:true}).click();
+    await p.getByRole('button',{name:'Masuk',exact:true}).click();
     await p.getByRole('button',{name:'Keluar akun',exact:true}).waitFor();
     await p.waitForFunction(()=>!document.querySelector('dialog[open]'));
   }
@@ -59,7 +59,7 @@ try {
   assert.equal(await other.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
   await other.screenshot({path:'/tmp/extra-tracker-companion-reminders-mobile.png',fullPage:true});
   await login(admin,'admin');
-  await admin.getByRole('button',{name:'Laporan pendamping',exact:true}).click();
+  await admin.getByRole('button',{name:'Manajemen laporan pendamping',exact:true}).click();
   const reports=admin.getByRole('region',{name:'Daftar laporan pendamping',exact:true});
   let report=reports.locator('article').filter({has:admin.getByRole('heading',{name:'Guru Tambahan Sekolah',exact:true})});
   await report.waitFor();
@@ -68,6 +68,10 @@ try {
   await report.getByRole('button',{name:'Koreksi laporan',exact:true}).click();
   assert.equal(await admin.getByRole('textbox',{name:/^Nama pendamping tambahan/}).inputValue(),'Guru Tambahan Sekolah');
   await admin.getByRole('textbox',{name:/^Nama pendamping tambahan/}).fill('Guru Pengganti');
+  await admin.getByRole('button',{name:'← Menu admin',exact:true}).click();
+  await admin.getByRole('dialog',{name:'Tinggalkan perubahan?',exact:true}).waitFor();
+  await admin.getByRole('button',{name:'Batal',exact:true}).click();
+  assert.equal(await admin.getByRole('textbox',{name:/^Nama pendamping tambahan/}).inputValue(),'Guru Pengganti');
   await admin.getByRole('button',{name:'Simpan koreksi',exact:true}).click();
   await admin.getByRole('status').filter({hasText:'Koreksi laporan berhasil disimpan'}).waitFor();
   await admin.getByLabel(/^Filter pendamping/).selectOption({label:'Guru Pengganti'});

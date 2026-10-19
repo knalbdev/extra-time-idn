@@ -10,7 +10,7 @@ import type { ActionResult, PortalData } from "@/lib/portal-types";
 import { ESKUL_ORDER } from "@/lib/constants";
 import { z } from "zod";
 
-const denied = "Username atau password tidak sesuai, atau akun tidak memiliki akses ke ruang ini.";
+const denied = "Username atau password tidak sesuai, atau akun tidak memiliki akses ke portal ini.";
 const failed = "Proses belum berhasil. Periksa koneksi dan coba lagi. Jika masih terkendala, hubungi admin.";
 export async function signInAction(input: unknown): Promise<ActionResult> {
   const parsed = loginSchema.safeParse(input);
@@ -52,6 +52,7 @@ export async function signInAction(input: unknown): Promise<ActionResult> {
     if (!allowed) { await client.auth.signOut({ scope: "local" }); return { ok: false, error: denied }; }
     revalidatePath("/");
     revalidatePath("/coach");
+    revalidatePath("/admin");
     revalidatePath("/pendamping");
     return { ok: true, data: undefined };
   } catch { return { ok: false, error: failed }; }
@@ -63,6 +64,7 @@ export async function signOutAction(): Promise<ActionResult> {
     if (error) return { ok: false, error: "Belum berhasil keluar dari akun. Silakan coba lagi." };
     revalidatePath("/");
     revalidatePath("/coach");
+    revalidatePath("/admin");
     revalidatePath("/pendamping");
     return { ok: true, data: undefined };
   } catch { return { ok: false, error: failed }; }
@@ -75,7 +77,7 @@ async function dataAfterWrite(): Promise<ActionResult<PortalData>> {
   try {
     const data = await loadPortal();
     return data ? { ok: true, data } : { ok: false, error: "Data berhasil disimpan. Silakan masuk kembali untuk melihat hasilnya." };
-  } catch { return { ok: false, error: "Data berhasil disimpan, tetapi tampilannya belum diperbarui. Klik Refresh data untuk melihat hasilnya sebelum menyimpan ulang." }; }
+  } catch { return { ok: false, error: "Data berhasil disimpan, tetapi tampilannya belum diperbarui. Pilih Perbarui data untuk melihat hasilnya sebelum menyimpan ulang." }; }
 }
 export async function saveMeetingAction(input: unknown): Promise<ActionResult<PortalData>> {
   const parsed = meetingSchema.safeParse(input);

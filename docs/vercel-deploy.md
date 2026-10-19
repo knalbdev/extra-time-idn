@@ -65,7 +65,7 @@ Push sudah membuat build baru setelah environment disimpan? Tidak perlu redeploy
 - Buka /coach dan coba ikon tampilkan/sembunyikan password.
 - Login memakai username profiles dan password Auth.
 - Buat pertemuan uji, simpan absensi/nilai, lalu reload.
-- Login admin, cek data pada Reporting ekskul.
+- Buka `/admin`, masuk sebagai admin, pilih Manajemen coach → Laporan penilaian, lalu periksa data.
 - Klik Keluar akun; Batal mempertahankan session, OK menjalankan logout. Jika ada draft, konfirmasi menyebut perubahan belum disimpan.
 - Bila build gagal, buka Build Logs. Bila login gagal hanya di live, cek Runtime Logs dan kecocokan environment; jangan membagikan secret/password melalui screenshot log.
 

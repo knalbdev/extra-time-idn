@@ -41,7 +41,7 @@ Tidak perlu membuat 12 akun, mengisi assignments, atau membuat bucket Storage. P
 2. Pastikan profil ditemukan, RLS tabel aktif, dan akses fungsi pengiriman menunjukkan `false`, `false`, `true` untuk anon, authenticated, service_role. Pengiriman berjalan melalui server yang memeriksa sesi login dan spreadsheet.
 3. Restart server lokal dan buka `/pendamping`. Masuk dengan username `pendamping.eskul` serta password akun Auth tadi.
 4. Deploy source terbaru ke project Vercel yang sama. Ketiga environment variable yang sudah digunakan tetap berlaku; tidak ada variable tambahan. Lakukan redeploy bila source terbaru belum terpasang.
-5. Uji sekali lagi di domain produksi. Kirim laporan, lalu buka **Laporan pendamping** melalui akun admin pada browser/profil lain. Pastikan nama, tanggal, jam, kelas, catatan, dan tautan sesuai.
+5. Uji sekali lagi di domain produksi. Kirim laporan, lalu buka **Laporan pendamping** melalui `/admin` → **Manajemen laporan pendamping** pada browser/profil lain. Pastikan nama, tanggal, jam, kelas, catatan, dan tautan sesuai.
 
 Jika belum menjalankan migration 005, pengiriman laporan belum dapat digunakan meskipun login berhasil. Verifikasi SQL bukan pengganti pengujian login dan pengiriman di domain produksi.
 
@@ -83,7 +83,7 @@ Daftar pilihan awal ada di `src/lib/companions.ts`. Setelah migration 006, guru 
 - Sesi yang belum dilaporkan tetap tampil setelah berganti hari. Beberapa sesi ditampilkan sebagai kartu terpisah; dua slot Panahan pada hari yang sama tetap dihitung masing-masing.
 - Satu laporan untuk satu sesi sudah cukup. Pengingat hilang setelah salah satu pendamping mengirim laporan, termasuk bagi perangkat lain pada pembaruan berikutnya. Jika laporan dihapus admin dan tidak ada laporan lain untuk sesi itu, pengingat muncul kembali.
 - Tombol **Isi laporan sekarang** membuka formulir dengan bulan, ekstrakurikuler, dan sesi yang sesuai. Jika ada isian untuk sesi lain yang belum dikirim, portal meminta konfirmasi sebelum menggantinya.
-- Jadwal dan status laporan diperbarui setiap menit saat halaman terlihat, serta ketika pengguna kembali ke tab setelah jeda. Perhitungan waktu diperiksa setiap 15 detik. Tombol **Muat ulang jadwal** tetap tersedia. Pembaruan otomatis mempertahankan draft formulir.
+- Jadwal dan status laporan diperbarui setiap menit saat halaman terlihat, serta ketika pengguna kembali ke tab setelah jeda. Perhitungan waktu diperiksa setiap 15 detik. Tombol **Perbarui jadwal** tetap tersedia. Pembaruan otomatis mempertahankan draft formulir.
 - Sesi libur/ditiadakan dan kegiatan yang dijeda tidak ditagih. Sesi tanpa jam mulai yang jelas (misalnya hanya “Ba’da Ashar”) diberi keterangan agar jamnya dilengkapi di spreadsheet; portal tidak menebak tenggat.
 - Pencocokan laporan memakai sumber spreadsheet, ekstrakurikuler, tanggal, jam mulai, dan daftar kelas. Urutan baris/kelas serta perubahan estimasi jam selesai tidak membuat pengingat baru. Perubahan tanggal, jam mulai, atau kelas dianggap sesi berbeda.
 - Pengingat berada **di dalam halaman website**, bukan push notification ketika browser ditutup. Tidak perlu mengizinkan notifikasi browser.
@@ -91,7 +91,7 @@ Daftar pilihan awal ada di `src/lib/companions.ts`. Setelah migration 006, guru 
 
 ## Pemeriksaan oleh admin
 
-Masuk sebagai admin → **Laporan pendamping**. Filter berdasarkan nama (termasuk nama manual), ekstrakurikuler, atau kelas. Setiap kartu memuat rincian sesi, catatan, waktu pengiriman, dan tombol membuka dokumentasi Drive. **Muat ulang laporan** mengambil kiriman terbaru dari perangkat lain.
+Buka `/admin`, masuk sebagai admin → **Manajemen laporan pendamping**. Filter berdasarkan nama (termasuk nama manual), ekstrakurikuler, atau kelas. Setiap kartu memuat rincian sesi, catatan, waktu pengiriman, dan tombol membuka dokumentasi Drive. **Muat ulang laporan** mengambil kiriman terbaru dari perangkat lain.
 
 Admin dapat mengoreksi nama, catatan, dan tautan dokumentasi. Tanggal, jam, kelas, dan ekstrakurikuler tetap mengikuti sesi saat dikirim. Koreksi mencatat waktu serta akun admin yang melakukan perubahan. Penghapusan memakai konfirmasi dan hanya menghapus catatan portal; file Drive tetap tersimpan.
 

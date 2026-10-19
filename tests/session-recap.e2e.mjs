@@ -30,9 +30,10 @@ try{
     const extended='Pekan,Tanggal,Kelas,Guru,Status,Hasil,Catatan\n'+Array.from({length:24},(_,i)=>`${i+1},31 Okt 2026,Semua kelas,Coach,Sudah Terlaksana,,`).join('\n');
     return route.fulfill({contentType:'text/csv',body:empty?'Header\n':longRecap&&sheet==='Renang'?extended:csv[sheet]});
   });
-  async function login(card,username){await page.getByRole('button',{name:card}).click();await page.getByLabel('Username',{exact:true}).fill(username);await page.getByLabel('Password',{exact:true}).fill('Fixture-Password-123!');await page.getByRole('button',{name:'Masuk workspace',exact:true}).click();await page.getByRole('button',{name:'Keluar akun',exact:true}).waitFor();}
+  async function login(card,username){await page.goto('http://localhost:3033/'+(username==='admin'?'admin':'coach'));await page.getByRole('button',{name:card}).click();await page.getByLabel('Username',{exact:true}).fill(username);await page.getByLabel('Password',{exact:true}).fill('Fixture-Password-123!');await page.getByRole('button',{name:'Masuk',exact:true}).click();await page.getByRole('button',{name:'Keluar akun',exact:true}).waitFor();}
   await page.goto('http://localhost:3033/coach',{waitUntil:'domcontentloaded'});
-  await login('Masuk admin','admin');
+  await login('Masuk sebagai admin','admin');
+  await page.getByRole('button',{name:'Manajemen coach',exact:true}).click();
   await page.getByRole('button',{name:'Rekap sesi',exact:true}).click();
   assert.equal(requests,0,'Do not fetch the spreadsheet before the admin requests a recap');
   await page.getByLabel('Tanggal mulai rekap',{exact:true}).fill('2026-10-01');
@@ -110,7 +111,7 @@ try{
   assert.deepEqual(await recap.locator('dd').allTextContents(),['0','0','0']);
   await page.getByRole('button',{name:'Keluar akun',exact:true}).click();
   await page.getByRole('button',{name:'Ya, keluar',exact:true}).click();
-  await page.getByRole('button',{name:'Masuk admin',exact:true}).waitFor();
+  await page.getByRole('button',{name:'Masuk sebagai admin',exact:true}).waitFor();
   await login(/Coach Renang/,'coach.renang');
   assert.equal(await page.getByRole('button',{name:'Rekap sesi',exact:true}).count(),0);
   assert.deepEqual(errors,[]);

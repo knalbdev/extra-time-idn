@@ -40,7 +40,7 @@ export function CoachReporting({ coach, eskul, data, students }: { students: Stu
     void run("Sedang menyusun laporan…", async () => {
       setReport({ meetings: structuredClone(scoped), records: structuredClone(data.records), generatedAt: new Date().toISOString() });
       setSlideIndex(0);
-      notify("Laporan berhasil disusun. Seluruh siswi ditampilkan dalam satu slide penilaian per kelas dan pertemuan.");
+      notify("Laporan berhasil dibuat. Kamu bisa melihat pratinjau atau mengunduhnya.");
     });
   }
   function download() {
@@ -62,14 +62,14 @@ export function CoachReporting({ coach, eskul, data, students }: { students: Stu
     });
   }
   return <div className="min-w-0 space-y-5">
-    <section className="card rounded-2xl p-5 print-hide"><p className="eyebrow">LAPORAN EKSKUL</p><h2 className="mt-2 font-heading text-2xl font-bold text-primary">Laporan Kehadiran dan Penilaian</h2><p className="mt-2 text-sm leading-relaxed text-on-surface-variant">Susun laporan berdasarkan kelas, periode, dan ekstrakurikuler. Setiap slide penilaian memuat seluruh siswi dalam satu kelas, beserta kehadiran, predikat, keterangan, dan catatan singkat. Catatan lengkap tersedia pada lampiran.</p>
+    <section className="card rounded-2xl p-5 print-hide"><p className="eyebrow">LAPORAN EKSKUL</p><h2 className="mt-2 font-heading text-2xl font-bold text-primary">Laporan Kehadiran dan Penilaian</h2><p className="mt-2 text-sm leading-relaxed text-on-surface-variant">Pilih kelas dan periode yang ingin dilaporkan. Laporan memuat kehadiran, predikat, dan catatan setiap siswi.</p>
       <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         <label className="text-xs font-semibold">Periode laporan<select aria-label="Periode laporan" value={period} onChange={e => { setPeriod(e.target.value); setReport(null); }} className={field}><option value="all">Semua semester</option>{PERIODS.map(p => <option key={p.key} value={p.key}>{p.label}</option>)}</select></label>
         <label className="text-xs font-semibold">Jenjang laporan<select aria-label="Jenjang laporan" value={level} onChange={e => { setLevel(e.target.value); setClassName("all"); setReport(null); }} className={field}><option value="all">Semua jenjang</option>{["SMP", "SMK"].map(l => <option key={l}>{l}</option>)}</select></label>
         <label className="text-xs font-semibold">Kelas laporan<select aria-label="Kelas laporan" value={className} onChange={e => { setClassName(e.target.value); setReport(null); }} className={field}><option value="all">Semua kelas pertemuan</option>{classes.map(c => <option key={c}>{c}</option>)}</select></label>
         <label className="text-xs font-semibold">Dari tanggal<input type="date" value={from} onChange={e => { setFrom(e.target.value); setReport(null); }} className={field} /></label><label className="text-xs font-semibold">Sampai tanggal<input type="date" value={to} onChange={e => { setTo(e.target.value); setReport(null); }} className={field} /></label>
       </div>{invalidRange && <p role="alert" className="mt-3 text-xs text-red-700">Tanggal akhir harus sama atau setelah tanggal awal.</p>}
-      <div className="mt-5 flex flex-wrap items-center gap-3"><button disabled={busy || !scoped.length || invalidRange} onClick={generate} className={action}>Generate laporan</button><span className="text-xs text-on-surface-variant">{scoped.length} pertemuan sesuai filter</span></div>
+      <div className="mt-5 flex flex-wrap items-center gap-3"><button disabled={busy || !scoped.length || invalidRange} onClick={generate} className={action}>Buat laporan</button><span className="text-xs text-on-surface-variant">{scoped.length} pertemuan sesuai filter</span></div>
       {!scoped.length && <p className="mt-3 text-xs text-on-surface-variant">Belum ada pertemuan yang sesuai. Ubah filter atau tunggu pencatatan pertemuan oleh coach.</p>}
     </section>
     {report && <>

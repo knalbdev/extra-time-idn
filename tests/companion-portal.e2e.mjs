@@ -10,14 +10,14 @@ try {
   for(const p of [page,admin]){p.setDefaultTimeout(20000);p.on('pageerror',e=>errors.push(e.message));}
   await page.goto('http://localhost:3033/pendamping');
   assert.equal(await page.getByRole('link',{name:'← Kembali ke dashboard',exact:true}).getAttribute('href'),'/?view=dashboard');
-  await page.getByRole('button',{name:'Masuk pendamping',exact:true}).click();
+  await page.getByRole('button',{name:'Masuk sebagai pendamping',exact:true}).click();
   await page.getByLabel('Password',{exact:true}).fill('wrong-password');
-  await page.getByRole('button',{name:'Masuk workspace',exact:true}).click();
+  await page.getByRole('button',{name:'Masuk',exact:true}).click();
   await page.getByRole('alert').filter({hasText:'Username atau password tidak sesuai'}).waitFor();
   await page.getByLabel('Password',{exact:true}).fill('Fixture-Password-123!');
   await page.getByRole('button',{name:'Tampilkan password',exact:true}).click();
   assert.equal(await page.getByLabel('Password',{exact:true}).getAttribute('type'),'text');
-  await page.getByRole('button',{name:'Masuk workspace',exact:true}).click();
+  await page.getByRole('button',{name:'Masuk',exact:true}).click();
   await page.getByRole('heading',{name:'Laporan Pendamping Eskul',exact:true}).waitFor();
   const names=page.getByLabel(/^Nama pendamping/);
   assert.equal(await names.locator('option').count(),14);
@@ -41,7 +41,7 @@ try {
   await page.setViewportSize({width:390,height:844});
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
   await page.screenshot({path:'/tmp/extra-tracker-companion-form-mobile.png',fullPage:true});
-  await page.getByRole('button',{name:'Muat ulang jadwal',exact:true}).click();
+  await page.getByRole('button',{name:'Perbarui jadwal',exact:true}).click();
   await page.getByRole('button',{name:'Ya, perbarui',exact:true}).click();
   await page.getByRole('status').filter({hasText:'Jadwal sudah diperbarui'}).waitFor();
   assert.equal(await names.inputValue(),'Astiana Utami');
@@ -59,12 +59,12 @@ try {
   await page.goto('http://localhost:3033/coach');assert.equal(new URL(page.url()).pathname,'/pendamping');
   assert.equal(await page.getByRole('button',{name:'Manajemen coach',exact:true}).count(),0);
 
-  await admin.goto('http://localhost:3033/coach');
-  await admin.getByRole('button',{name:'Masuk admin',exact:true}).click();
+  await admin.goto('http://localhost:3033/admin');
+  await admin.getByRole('button',{name:'Masuk sebagai admin',exact:true}).click();
   await admin.getByLabel('Username',{exact:true}).fill('admin');
   await admin.getByLabel('Password',{exact:true}).fill('Fixture-Password-123!');
-  await admin.getByRole('button',{name:'Masuk workspace',exact:true}).click();
-  await admin.getByRole('button',{name:'Laporan pendamping',exact:true}).click();
+  await admin.getByRole('button',{name:'Masuk',exact:true}).click();
+  await admin.getByRole('button',{name:'Manajemen laporan pendamping',exact:true}).click();
   const reports=admin.getByRole('region',{name:'Daftar laporan pendamping',exact:true});
   let card=reports.locator('article').filter({has:admin.getByRole('heading',{name:'Astiana Utami',exact:true})});
   await card.waitFor();assert.ok((await card.innerText()).includes('Transportasi terlambat 10 menit'));
@@ -73,10 +73,9 @@ try {
   await admin.getByLabel(/^Koreksi nama pendamping/).selectOption({label:'Annida Mar’athus Shaleha'});
   await admin.getByRole('textbox',{name:/^Koreksi catatan/}).fill('Kegiatan berjalan lancar.');
   await admin.getByLabel('Koreksi link dokumentasi',{exact:true}).fill('https://drive.google.com/file/d/companion-file/view');
-  // Clicking the current menu preserves the draft; leaving requires confirmation.
-  await admin.getByRole('button',{name:'Laporan pendamping',exact:true}).click();
+  // Leaving the companion section must protect an unsaved correction.
   assert.equal(await admin.getByRole('textbox',{name:/^Koreksi catatan/}).inputValue(),'Kegiatan berjalan lancar.');
-  await admin.getByRole('button',{name:'Manajemen coach',exact:true}).click();
+  await admin.getByRole('button',{name:'← Menu admin',exact:true}).click();
   await admin.getByRole('dialog',{name:'Tinggalkan perubahan?',exact:true}).waitFor();
   await admin.getByRole('button',{name:'Batal',exact:true}).click();
   await admin.getByRole('button',{name:'Simpan koreksi',exact:true}).click();
@@ -85,7 +84,7 @@ try {
   assert.ok((await card.innerText()).includes('Kegiatan berjalan lancar.'));
   assert.ok((await card.innerText()).includes('7B'));
   assert.ok((await card.innerText()).includes('Dikoreksi'));
-  await admin.getByRole('button',{name:'Refresh data',exact:true}).click();
+  await admin.getByRole('button',{name:'Perbarui data',exact:true}).click();
   await admin.getByRole('status').filter({hasText:'Data sudah diperbarui'}).waitFor();
   await card.waitFor();
   assert.ok((await card.innerText()).includes('Kegiatan berjalan lancar.'));
@@ -111,7 +110,7 @@ try {
   await page.getByRole('button',{name:'Keluar akun',exact:true}).click();
   await page.getByRole('button',{name:'Batal',exact:true}).click();await page.getByRole('button',{name:'Keluar akun',exact:true}).click();
   await page.getByRole('button',{name:'Ya, keluar',exact:true}).click();
-  await page.getByRole('button',{name:'Masuk pendamping',exact:true}).waitFor();
+  await page.getByRole('button',{name:'Masuk sebagai pendamping',exact:true}).waitFor();
   await page.waitForFunction(()=>document.querySelectorAll('dialog[open]').length===0);
   assert.notEqual(await page.evaluate(()=>getComputedStyle(document.body).overflowY),'hidden');
   assert.deepEqual(errors,[]);

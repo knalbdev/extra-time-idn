@@ -15,7 +15,7 @@ export default async function CompanionPage() {
   try { account = await currentAccount(); }
   catch { return <CompanionGateway enabled error="Portal belum dapat dimuat. Coba muat ulang halaman atau hubungi admin." />; }
   if (!account) return <CompanionGateway enabled />;
-  if (account.profile.role !== "pendamping") redirect("/coach");
+  if (account.profile.role !== "pendamping") redirect(account.profile.role === "admin" ? "/admin" : "/coach");
   let overview:CompanionOverview = {serverTime:new Date().toISOString(),schedules:[],reporting:null}, error: string | undefined;
   try { overview = await companionOverview(); }
   catch { error = "Jadwal belum dapat dimuat. Periksa koneksi, lalu pilih Muat ulang jadwal untuk mencoba kembali."; }

@@ -9,9 +9,9 @@ Kode portal kini memakai Supabase Auth dan database. Tidak ada fallback ke passw
 3. Salin SELURUH isi `supabase/migrations/202610170003_portal_runtime.sql`, lalu Run satu kali. Migration ini menambahkan limiter login persisten, RPC penugasan coach yang transaksional, dan memperbaiki SELECT policy agar INSERT ... RETURNING berhasil. Jangan menjalankan ulang migration 001 atau menghapus tabel yang sudah ada.
    Setelah migration 003, jalankan `supabase/migrations/202610180004_extracurricular_visibility.sql` satu kali untuk pengaturan aktif/nonaktif ekstrakurikuler. Jika 003 sudah pernah berhasil, cukup jalankan file 004 yang baru.
 4. Pastikan environment `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SECRET_KEY` berasal dari project yang sama. Secret key hanya digunakan server untuk lookup username, operasi Auth, dan pengiriman laporan pendamping yang sudah diverifikasi; operasi nilai dan pembacaan/koreksi laporan admin memakai session pengguna dan RLS.
-5. Restart `npm run dev`. Buka `/coach`, pilih kartu ekskul atau Masuk admin, lalu isi username dari `profiles` dan password akun Auth terkait. Tidak ada registrasi publik.
+5. Restart `npm run dev`. Coach membuka `/coach` dan memilih kartu ekskul; admin membuka `/admin` dan memilih Masuk sebagai admin. Isi username dari `profiles` dan password akun Auth terkait. Tidak ada registrasi publik.
 6. Uji coach: buat pertemuan untuk salah satu kelas penugasan, pilih siswi, isi absensi dan predikat, simpan, reload. Nilai harus tetap ada.
-7. Uji admin: masuk akun admin, buka Reporting ekskul dan generate laporan. Pada Manajemen coach, pilih Ubah untuk mengganti status aktif serta kelas/ekskul. Kelas yang dipilih diterapkan ke SELURUH ekskul yang dicentang. Akun Auth baru tetap dibuat melalui dashboard Supabase dan template profil; belum ada form provisioning akun baru di web.
+7. Uji admin: masuk melalui `/admin`, pilih Manajemen coach → Laporan penilaian, lalu buat laporan. Pada Manajemen coach → Akun coach, pilih Ubah untuk mengganti status aktif serta kelas/ekskul. Kelas yang dipilih diterapkan ke SELURUH ekskul yang dicentang. Akun Auth baru tetap dibuat melalui dashboard Supabase dan template profil; belum ada form provisioning akun baru di web.
 8. Deploy source terbaru ke Vercel; pastikan ketiga environment sudah tersimpan, lalu redeploy. File `.env.local` tidak diunggah ke Git.
 
 Login coach/admin dibatasi 10 percobaan per username per 15 menit dan 60 per IP per 15 menit pada Vercel. Setelah migration 005, akun pendamping aktif mendapat batas 30 per username untuk penggunaan bersama. Host lokal/non-Vercel memakai bucket IP bersama. Jika migration runtime belum dipasang, login ditolak dengan pesan konfigurasi; aplikasi tidak beralih ke mode demo.
@@ -26,7 +26,7 @@ Login coach/admin dibatasi 10 percobaan per username per 15 menit dan 60 per IP 
 - Materi pertemuan dikunci database setelah ada catatan.
 - Admin mengelola penugasan/status dan laporan. Coach tidak mendapat menu laporan atau endpoint mutasi admin yang terotorisasi.
 - Portal pendamping memakai satu akun bersama, pilihan 12 nama, sesi spreadsheet, catatan, dan tautan Drive. Aktivasi membutuhkan migration 005 serta satu profil pendamping; ikuti [panduan portal pendamping](portal-pendamping.md). Laporan diperiksa pada menu admin; tidak ada unggahan foto ke website.
-- Tombol Refresh data memuat perubahan perangkat lain. Belum memakai realtime subscriptions.
+- Tombol Perbarui data memuat perubahan perangkat lain. Belum memakai realtime subscriptions.
 - Akun nonaktif kehilangan akses pada pemeriksaan server/RLS berikutnya. Data yang sudah dilihat sebelumnya tidak bisa ditarik kembali dari perangkat pengguna.
 
 ## Pengujian
@@ -76,7 +76,7 @@ Bug scroll direproduksi pada browser uji: setelah login berhasil, tidak ada dial
 
 Semua dialog portal kini memakai `src/lib/use-modal-dialog.ts`: kepemilikan scroll lock dibagi melalui token, pengaturan awal body/html hanya dipulihkan setelah pemilik terakhir selesai. Dialog ditutup dalam cleanup layout effect sebelum halaman lain ditampilkan agar modal browser tidak menyisakan penguncian interaksi.
 
-Judul kiri atas workspace berupa identitas, tanpa tautan keluar. Beranda `/` memeriksa akun aktif di server dan mengarahkan coach/admin yang masih masuk ke `/coach`, termasuk akses langsung atau Back. Login/logout juga membatalkan cache halaman beranda. Pengguna yang belum masuk tetap dapat membuka landing page/dashboard publik. Proxy memperbarui sesi pada beranda dan portal; tidak ada perubahan schema SQL.
+Judul kiri atas workspace berupa identitas, tanpa tautan keluar. Beranda `/` memeriksa akun aktif di server dan mengarahkan coach ke `/coach`, admin ke `/admin`, dan pendamping ke `/pendamping` saat masih masuk, termasuk akses langsung atau Back. Login/logout juga membatalkan cache halaman beranda. Pengguna yang belum masuk tetap dapat membuka landing page/dashboard publik. Proxy memperbarui sesi pada beranda dan portal; tidak ada perubahan schema SQL.
 
 Regresi `node tests/portal-navigation.e2e.mjs` memakai fixture lokal yang sama dengan tes login. Jalankan pada fixture baru SEBELUM `tests/portal-login.e2e.mjs` (tes login menonaktifkan coach renang sebagai bagian dari pengujiannya). Cakupan desktop 1280px dan ponsel 390px: masuk dari dashboard, buka/tutup dialog berulang, login dengan dua modal bertumpuk, scroll menggunakan roda mouse, refresh, Batal/keluar, Back/akses langsung beranda, dan kembali ke portal tanpa reload. Tes login juga memeriksa bahwa login tidak meninggalkan scroll lock.
 
@@ -104,7 +104,7 @@ Unduhan **rekap PNG** memiliki lebar 1920 piksel, dengan tinggi minimal 1080 pik
 2. Deploy source terbaru ke Vercel, atau restart server lokal. Environment variable tetap sama.
 3. Masuk sebagai admin → **Pengaturan ekskul**. Gunakan sakelar pada kartu kegiatan, lalu konfirmasi. Status disimpan pada `extracurriculars.is_active` dan berlaku bersama untuk semua pengguna.
 4. Kegiatan nonaktif disembunyikan dari beranda, dashboard, jadwal, filter, ruang coach, pilihan penugasan, laporan penilaian, serta rekap sesi/PNG. Jadwal tetap bersumber dari spreadsheet; tab yang nonaktif tidak dimuat. Jadwal lama di cache browser juga disaring sebelum ditampilkan.
-5. Halaman yang sedang terbuka memeriksa status setiap 30 detik saat terlihat, saat tab mendapat fokus kembali, dan melalui Refresh data. RLS langsung menolak penilaian/pertemuan untuk kegiatan nonaktif meskipun coach masih memiliki sesi login. Login baru ke ruang tersebut ditolak. Admin tetap bisa masuk meskipun semua kegiatan dinonaktifkan.
+5. Halaman yang sedang terbuka memeriksa status setiap 30 detik saat terlihat, saat tab mendapat fokus kembali, dan melalui Perbarui data. RLS langsung menolak penilaian/pertemuan untuk kegiatan nonaktif meskipun coach masih memiliki sesi login. Login baru ke ruang tersebut ditolak. Admin tetap bisa masuk meskipun semua kegiatan dinonaktifkan.
 6. Mengaktifkan kembali kegiatan menampilkan data sebelumnya. Tidak ada penghapusan atau perubahan jadwal spreadsheet, akun coach, penugasan, maupun nilai. Penugasan kegiatan nonaktif tetap disimpan ketika penugasan lain diedit.
 
 Pengecekan opsional di SQL Editor:
@@ -117,3 +117,7 @@ select public.get_enabled_extracurriculars();
 API publik hanya mengembalikan ID kegiatan aktif; akses anonim ke delapan tabel tetap tidak diberikan. Hanya admin yang dapat mengubah status. Jika pengaturan tidak dapat dimuat, jadwal disembunyikan sementara dan pemberitahuan untuk mencoba kembali ditampilkan, agar kegiatan yang sudah dijeda tidak muncul dari data lama. Jalankan migration 004 sebelum deploy: tanpa migration ini, daftar kegiatan dan data portal belum dapat dimuat.
 
 `tests/extracurricular-settings.e2e.mjs` menguji konfirmasi/batal, penyimpanan lintas muat ulang dan pengguna, cache, pengambilan spreadsheet, filter laporan, pause/aktivasi akun coach yang sedang masuk, dan layout ponsel. `supabase/tests/portal-rls.mjs` juga menguji larangan perubahan oleh coach, penolakan penilaian saat dijeda, dan pemulihan data sesudah aktivasi. Keduanya memakai database uji lokal. Jalankan tes browser pengaturan, navigasi, dan rekap sebelum tes login yang menonaktifkan akun coach uji.
+
+## Portal admin terpisah
+
+Admin sekarang masuk melalui `/admin`. Halaman awal berisi kartu **Manajemen coach** dan **Manajemen laporan pendamping**. Akun, role, dan penyimpanan tetap memakai konfigurasi yang sama; tidak ada migration tambahan untuk pemindahan halaman. Lihat [panduan Portal Admin](portal-admin.md).

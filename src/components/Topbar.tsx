@@ -21,13 +21,13 @@ export function Topbar({
       <button
         type="button"
         onClick={onMenuClick}
-        className="flex h-9 w-9 items-center justify-center rounded-full text-on-surface-variant transition hover:bg-surface-container lg:hidden"
+        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-on-surface-variant transition hover:bg-surface-container lg:hidden"
         aria-label="Buka menu"
       >
         <Icon name="menu" className="text-xl" />
       </button>
 
-      <div className="ml-3 hidden sm:block"><p className="text-xs font-semibold text-primary">Portal Ekstrakurikuler</p><p className="mt-0.5 text-[10px] text-on-surface-variant">SMP SMK IDN Akhwat</p></div>
+      <div className="ml-2 min-w-0 sm:ml-3"><p className="text-xs font-semibold text-primary">Portal Ekstrakurikuler</p><p className="mt-0.5 hidden text-[10px] text-on-surface-variant sm:block">SMP SMK IDN Akhwat</p></div>
       <div className="ml-auto flex items-center gap-3">
         <motion.span
           key={fetchedAt ?? "loading"}
@@ -47,8 +47,8 @@ export function Topbar({
           onClick={onRefresh}
           disabled={loading}
           whileTap={{ scale: 0.9 }}
-          className="flex h-9 w-9 items-center justify-center rounded-full text-on-surface-variant transition hover:bg-surface-container disabled:cursor-not-allowed disabled:opacity-60"
-          aria-label="Refresh data"
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-on-surface-variant transition hover:bg-surface-container disabled:cursor-not-allowed disabled:opacity-60"
+          aria-label="Perbarui data"
         >
           <Icon name="refresh" className={`text-xl ${loading ? "animate-spin" : ""}`} />
         </MagneticButton>

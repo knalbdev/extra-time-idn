@@ -122,8 +122,8 @@ try {
   await page.getByRole('button',{name:'Kalender',exact:true}).click();
   assert.equal(await page.getByRole('combobox',{name:'Bulan',exact:true}).count(),0);
   await calendar.getByRole('heading',{name:'Oktober 2026',exact:true}).waitFor();
-  await page.getByRole('button',{name:'Refresh data',exact:true}).click();
-  await page.waitForFunction(()=>!document.querySelector('button[aria-label="Refresh data"]').disabled);
+  await page.getByRole('button',{name:'Perbarui data',exact:true}).click();
+  await page.waitForFunction(()=>!document.querySelector('button[aria-label="Perbarui data"]').disabled);
   assert.deepEqual(errors,[]);
   console.log('PASS anchored day popup, four sessions, full participant classes, indigo Taekwondo, outside/Escape/close dismissal, focus restoration, mobile bounds and internal scrolling, filters, WIB rollover, list and refresh');
 } finally {await browser.close();}

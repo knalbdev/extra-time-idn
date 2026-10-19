@@ -29,7 +29,8 @@ export default async function Home({ searchParams }: PageProps<"/">) {
   if (hasSupabaseConfig()) {
     try { account = await currentAccount(); } catch { /* Render the public page without a verified account. */ }
   }
-  if (account && (account.profile.role === "coach" || account.profile.role === "admin")) redirect("/coach");
+  if (account?.profile.role === "admin") redirect("/admin");
+  if (account?.profile.role === "coach") redirect("/coach");
   if (account?.profile.role === "pendamping") redirect("/pendamping");
   const documentationPhotos = getDocumentationPhotos();
   const query = await searchParams;
