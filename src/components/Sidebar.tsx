@@ -4,7 +4,6 @@ import { motion } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
 import { Ref } from "react";
-import { SPREADSHEET_URL } from "@/lib/constants";
 import { Icon } from "./Icon";
 
 export type View = "dashboard" | "schedule" | "laporan";
@@ -138,14 +137,6 @@ export function Sidebar({
         </div>
 
         <div className="mt-auto flex flex-col gap-2 px-6 py-4">
-          <a
-            href={SPREADSHEET_URL}
-            target="_blank"
-            rel="noreferrer"
-            className="flex items-center gap-1.5 text-xs text-on-primary/60 underline decoration-dotted underline-offset-2 transition hover:text-on-primary"
-          >
-            Lihat spreadsheet sumber
-          </a>
           <span className="mt-1 inline-flex w-fit items-center rounded-full bg-white/10 px-3 py-1.5 text-[11px] font-semibold text-on-primary/80 ring-1 ring-white/10">
             developed by{" "}
             <a
