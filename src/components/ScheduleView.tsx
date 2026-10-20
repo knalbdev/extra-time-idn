@@ -14,7 +14,7 @@ import { useJakartaToday } from "./useJakartaToday";
 
 export function ScheduleView({
   filteredEvents, months, selectedMonth, onMonthChange, selectedClass,
-  onClassChange, activeEskuls, onToggleEskul, onClearFilters,
+  onClassChange, activeEskuls, onToggleEskul, onClearFilters, initialDate,
 }: {
   filteredEvents: EskulEvent[];
   months: MonthOption[];
@@ -25,6 +25,7 @@ export function ScheduleView({
   activeEskuls: Set<EskulKey>;
   onToggleEskul: (eskul: EskulKey) => void;
   onClearFilters: () => void;
+  initialDate?: string;
 }) {
   const today = useJakartaToday();
   const [display, setDisplay] = useState<"calendar" | "list">("calendar");
@@ -38,7 +39,7 @@ export function ScheduleView({
 
   return <div className="flex min-w-0 flex-col gap-6">
     <PageHeading eyebrow="JADWAL KEGIATAN" title="Jadwal Ekstrakurikuler" description="Lihat jadwal kegiatan, kelas peserta, dan status pelaksanaan tahun ajaran 2026/2027." icon="calendar_month" />
-    {display === "calendar" ? <ScheduleCalendar key={calendarMonth} events={visibleEvents} month={calendarMonth} today={today} onMonthChange={onMonthChange} headerControls={<>{classFilter}{viewControls}</>} filters={filters} summary={summary} /> :
+    {display === "calendar" ? <ScheduleCalendar key={calendarMonth} initialDate={initialDate} events={visibleEvents} month={calendarMonth} today={today} onMonthChange={onMonthChange} headerControls={<>{classFilter}{viewControls}</>} filters={filters} summary={summary} /> :
       <section aria-label="Daftar jadwal" className="card min-w-0 overflow-hidden rounded-3xl">
         <header className="flex flex-wrap items-end justify-between gap-4 p-4 sm:px-6 sm:py-5"><div><p className="eyebrow">AGENDA KEGIATAN</p><h2 className="mt-1 font-heading text-2xl font-bold">Daftar Ekstrakurikuler</h2></div><div className="flex w-full flex-wrap items-end gap-3 sm:w-auto">{classFilter}{viewControls}</div></header>
         <div className="border-y border-outline-variant/50 px-4 py-4 sm:px-6">{filters}</div>

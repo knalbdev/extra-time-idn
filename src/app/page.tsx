@@ -34,5 +34,8 @@ export default async function Home({ searchParams }: PageProps<"/">) {
   if (account?.profile.role === "pendamping") redirect("/pendamping");
   const documentationPhotos = getDocumentationPhotos();
   const query = await searchParams;
-  return <HomeClient documentationPhotos={documentationPhotos} showDashboard={query.view === "dashboard"} />;
+  const scheduleDate = typeof query.scheduleDate === "string" && /^20\d{2}-\d{2}-\d{2}$/.test(query.scheduleDate)
+    && Number.isFinite(Date.parse(`${query.scheduleDate}T00:00:00Z`))
+    && new Date(`${query.scheduleDate}T00:00:00Z`).toISOString().slice(0,10) === query.scheduleDate ? query.scheduleDate : undefined;
+  return <HomeClient documentationPhotos={documentationPhotos} showDashboard={query.view === "dashboard"} scheduleDate={scheduleDate} />;
 }

@@ -15,7 +15,7 @@ const clockMinutes = (time: string) => {
 };
 const navButton = "inline-flex h-10 items-center justify-center rounded-xl border border-outline-variant bg-white px-3 text-xs font-semibold text-primary transition hover:bg-blue-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary";
 
-export function ScheduleCalendar({ events, month, today, onMonthChange, headerControls, filters, summary }: {
+export function ScheduleCalendar({ events, month, today, onMonthChange, headerControls, filters, summary, initialDate }: {
   events: EskulEvent[];
   month: string;
   today: string;
@@ -23,6 +23,7 @@ export function ScheduleCalendar({ events, month, today, onMonthChange, headerCo
   headerControls?: ReactNode;
   filters?: ReactNode;
   summary?: ReactNode;
+  initialDate?: string;
 }) {
   const weeks = useMemo(() => calendarMonthWeeks(month), [month]);
   const byDate = useMemo(() => {
@@ -35,7 +36,7 @@ export function ScheduleCalendar({ events, month, today, onMonthChange, headerCo
     for (const group of groups.values()) group.sort((a, b) => clockMinutes(a.time) - clockMinutes(b.time) || a.eskul.localeCompare(b.eskul));
     return groups;
   }, [events]);
-  const [chosenDate, setChosenDate] = useState<string | null>(null);
+  const [chosenDate, setChosenDate] = useState<string | null>(initialDate?.startsWith(month) ? initialDate : null);
   const [popover, setPopover] = useState<CalendarDaySelection | null>(null);
   const popoverId = useId();
   const dismissPopover = useCallback((selection: CalendarDaySelection) => setPopover(current => current === selection ? null : current), []);

@@ -71,6 +71,8 @@ Push sudah membuat build baru setelah environment disimpan? Tidak perlu redeploy
 
 Pengaturan Site URL Supabase dapat diarahkan ke domain production untuk alur email/reset password saat fitur tersebut dipakai. Login username/password saat ini menggunakan server action, tidak membutuhkan callback OAuth terpisah.
 
+Fitur notifikasi jadwal memerlukan empat variabel tambahan, migrasi 007, dan penjadwal eksternal. Ikuti [panduan notifikasi jadwal](notifikasi-jadwal.md) setelah deployment portal berhasil.
+
 Sumber resmi:
 - https://vercel.com/docs/git
 - https://vercel.com/docs/deployments/managing-deployments

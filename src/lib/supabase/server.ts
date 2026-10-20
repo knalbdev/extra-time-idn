@@ -21,7 +21,8 @@ export async function sessionClient() {
   });
 }
 // Username resolution, Auth provisioning, and companion submission/idempotency
-// checks may use this client. Companion sessions and actors are verified first.
+// checks and service-only Web Push RPCs may use this client. Companion actors,
+// push device ownership, and scheduler authorization are verified first.
 // Student/meeting/assessment requests must use sessionClient + RLS.
 export function adminClient() {
   if (!hasSupabaseConfig()) throw new Error("Konfigurasi Supabase belum lengkap di server.");

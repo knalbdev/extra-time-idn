@@ -36,7 +36,7 @@ function writeCache(data: ScheduleResponse) {
   }
 }
 
-export function ScheduleApp({ onGoHome }: { onGoHome?: () => void }) {
+export function ScheduleApp({ onGoHome, initialScheduleDate }: { onGoHome?: () => void; initialScheduleDate?: string }) {
   const { enabledEskuls, refreshEnabled } = useExtracurriculars();
   const [rawEvents, setEvents] = useState<EskulEvent[]>([]);
   const events = useMemo(() => rawEvents.filter(event => enabledEskuls.includes(event.eskul)), [rawEvents, enabledEskuls]);
@@ -45,11 +45,11 @@ export function ScheduleApp({ onGoHome }: { onGoHome?: () => void }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const [view, setView] = useState<View>("dashboard");
+  const [view, setView] = useState<View>(initialScheduleDate ? "schedule" : "dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const sidebarRef = useRef<HTMLElement>(null);
 
-  const [selectedMonth, setSelectedMonth] = useState(() => monthKey(isoToday()));
+  const [selectedMonth, setSelectedMonth] = useState(() => monthKey(initialScheduleDate ?? isoToday()));
   const [selectedClass, setSelectedClass] = useState("all");
   const [activeEskuls, setActiveEskuls] = useState<Set<EskulKey>>(
     () => new Set(enabledEskuls),
@@ -189,6 +189,7 @@ export function ScheduleApp({ onGoHome }: { onGoHome?: () => void }) {
                   <ReportView events={events} />
                 ) : (
                   <ScheduleView
+                    initialDate={initialScheduleDate}
                     filteredEvents={filteredEvents}
                     months={months}
                     selectedMonth={selectedMonth}
